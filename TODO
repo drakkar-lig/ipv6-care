@@ -1,0 +1,18 @@
+
+
+Court terme:
+- installation de bash_completion 
+- mettre a jour la doc 2.3
+- sortir version 2.3
+- tester:
+	- faire marcher LD_PRELOAD=...patching.so ssh ui
+	- faire marcher LD_PRELOAD=...patching.so /etc/init.d/mysqld start
+	- faire marcher en le mettant dans /etc/ld.so.preload
+- utiliser /etc/ld.so.preload pour le mode install globale au systeme
+- mettre a jour la doc 3.0
+- sortir version 3.0
+
+
+Versions suivantes:
+- pour les conversions en chaine d'adresses IPv6, tronquer pour qu'elle aient une taille au max egales a 15 caracteres (les plus longues adresses IPv4 etant xxx.xxx.xxx.xxx). On tronque le debut car la fin est souvent plus significative. 
+par ex: 2001:660:3302:7006::3 -> ...3302:7006::3

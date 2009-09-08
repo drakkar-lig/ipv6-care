@@ -1,0 +1,24 @@
+
+Documentation is maintained at 
+http://sourceforge.net/project/showfiles.php?group_id=246941&package_id=301497
+Please refer to it.
+This is just a very basic quick start.
+
+
+Installation steps:
+-------------------
+* Download
+* tar xfz ipv6_care-*.tar.gz
+* cd ipv6_care-*
+* only if source package: make
+* sudo make install
+
+
+Usage:
+------
+
+ipv6-care check <your_program_and_arguments>
+<or>
+ipv6-care shell # will enter a shell where all commands will be checked.
+
+

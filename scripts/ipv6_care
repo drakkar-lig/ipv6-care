@@ -1,0 +1,275 @@
+#!/bin/bash
+#
+# Copyright (c) Members of the EGEE Collaboration. 2008. 
+# See http://www.eu-egee.org/partners/ for details on the copyright
+# holders.  
+# 
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0 
+# 
+# Unless required by applicable law or agreed to in writing, software 
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+# See the License for the specific language governing permissions and 
+# limitations under the License.
+# 
+# ---------------------------------------------------------------------
+# Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
+# etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
+# Dec 10, 2008.
+# ---------------------------------------------------------------------
+# 
+# Last modifications: 
+# Etienne DUBLE 	-2.0:	Creation
+# Etienne DUBLE 	-2.1:	Handling of subprocesses
+# Etienne DUBLE 	-2.1:	Show diagnosis location also in ipv6_care shell
+# Etienne DUBLE 	-2.2:	Use tput to get number of COLUMNS
+# Etienne DUBLE 	-2.2:	Verbose option activating online display of function calls
+# Etienne DUBLE 	-2.3:	More coherence in colors
+# 
+
+# update the COLUMNS variable
+COLUMNS=$(tput cols)
+if [ "$COLUMNS" = "" ]
+then
+	COLUMNS=70
+fi
+
+# check where is libipv6_care.so
+full_directory=$(cd $(dirname "$0"); pwd)
+if [ "$full_directory" = "/usr/bin" ]
+then
+	full_directory="/usr/lib"
+fi
+
+this_program=$(basename $0)
+
+GREEN="\033[32;1m"
+ENDGREEN="\033[0m"
+
+if [ ! -f "$full_directory/libipv6_care.so" ]
+then
+	echo "libipv6_care.so was not found! Aborting." >&2
+	exit
+fi
+
+ipv6_care_get_diagnosis_directories()
+{
+	ls -1td /tmp/ipv6_diagnosis/*/by_pid/pid_* 2>/dev/null
+}
+
+ipv6_care_show_directories()
+{
+	GREEN="\033[32;1m"
+	ENDGREEN="\033[0m"
+
+	new_number_of_directories=$(ipv6_care_get_diagnosis_directories | wc -l)
+	number_of_new_directories=$(($new_number_of_directories - $ipv6_care_prev_number_of_directories))
+
+	# check if diagnosis directories were created
+	for directory in $(ipv6_care_get_diagnosis_directories | head -n $number_of_new_directories)
+	do
+		# sometimes we are going too fast and try to read the command line before it is written
+		# this loop will avoid this
+		while true
+		do
+			full_command_line=$(cat $directory/full_command_line 2>/dev/null)
+			if [ "$full_command_line" != "" ]
+			then
+				break
+			fi
+			sleep 0.1
+		done
+		echo -en "$GREEN"
+		echo -n  "IPv6 diagnosis for '$full_command_line' was generated in: $directory"
+		echo -e  "$ENDGREEN"
+	done
+
+	export ipv6_care_prev_number_of_directories=$new_number_of_directories 	# for next call
+
+	return $number_of_new_directories
+}
+
+ipv6_care_prev_number_of_directories=$(ipv6_care_get_diagnosis_directories | wc -l)
+
+case "$1" in
+	"sh"|"shell")
+		echo -e "$GREEN"
+		echo "IPv6 compliance checking is now enabled for all programs started in this bash session."
+		echo "Diagnosis will be reported in '/tmp/ipv6_diagnosis'."
+
+		shift
+
+		if [ "$1" = "-o" ]
+		then
+			echo "Since you specified option '-o', only programs with IPv6 compliance problems will be logged."
+			export IPV6_LOG_ALL=0
+			shift
+		else
+			echo "All network-related programs will be logged."
+			export IPV6_LOG_ALL=1
+		fi
+
+		case "$1" in
+			"-v")
+				export IPV6_VERBOSE_LEVEL=1
+				shift
+				;;
+			"")
+				export IPV6_VERBOSE_LEVEL=0
+				;;
+			*)
+				echo "Usage: $this_program sh[ell] [-o] [-v]" >&2
+				echo "Use '-o' if you want only programs with IPv6 compliance problems to be logged." >&2
+				echo "Otherwise all network-related programs will be logged." >&2
+				echo "Use '-v' if you want the functions calls displayed on the standard output." >&2
+				exit
+		esac
+		echo -e "$ENDGREEN"
+
+		export LD_PRELOAD="$full_directory/libipv6_care.so"
+
+		PROMPT_COMMAND="ipv6_care_show_directories" 
+		PS1="$GREEN[IPv6 CARE]$ENDGREEN \w\$ "
+
+		export PROMPT_COMMAND PS1 ipv6_care_prev_number_of_directories 
+		export -f ipv6_care_show_directories ipv6_care_get_diagnosis_directories
+		bash --noprofile --norc
+
+		echo -e "$GREEN"
+		echo "End of IPv6 CARE shell."
+		echo -e "$ENDGREEN"
+		;;
+
+	"check")
+		shift
+
+		if [ "$1" = "-v" ]
+		then
+			verbose_level=1
+			shift
+		else
+			verbose_level=0
+		fi
+
+		# We will retrieve the command provided as arguments.
+		# We do a special processing in order to get a command as 
+		# similar as the one which was really typed.
+		#
+		# The reason for this is that, for example, if you have a 
+		# script called 'execute.sh' with just the following code:
+		# -----------
+		# #!/bin/bash
+		# eval "$*"
+		# -----------
+		# then running the following command:
+		# $ execute.sh echo "a                      b"
+		# would incorrectly return:
+		# a b
+		# 
+		# With this code we want to avoid this kind of problems.
+
+		program_to_test="$(
+			# command itself
+			echo -n "$1"
+			shift
+
+			# arguments
+			while [ "$*" != "" ]
+			do	# put double-quotes in order to separate
+				# each argument
+				echo -n " \"$1\""
+				shift
+			done
+		)"
+
+		# check that it seems ok
+		if [ "$program_to_test" = "" ]
+		then
+			echo "Usage: $this_program check <program_command_line_which_must_be_tested_about_IPv6>" >&2
+			exit
+		fi
+
+		# function which prints a separation line
+		print_separation_line()
+		{
+			printf "%${COLUMNS}s\n" "" | tr " " "-"
+		}
+
+		# this function will be called at the end
+		end_of_script()
+		{
+			echo -en "$GREEN"
+			print_separation_line
+
+			# get directories 
+			directories=$(ipv6_care_show_directories)
+			number_of_new_directories=$?
+
+			# check if the diagnosis directory was created
+			if [ $number_of_new_directories -gt 0 ]
+			then
+				if [ $number_of_new_directories -gt 1 ]
+				then
+					echo "Several processes were started by this command. "
+				fi
+				echo "$directories"
+			else
+				echo "No IPv6 diagnosis was generated because no network-related function calls were detected."
+			fi
+
+			echo -en "$GREEN"
+			print_separation_line
+			echo -en "$ENDGREEN"
+			exit
+		}
+
+		get_process_list()
+		{
+			ps T -o pid=,comm= 
+		}
+
+		get_process_list > /tmp/.plist_$$_init
+
+		# whatever happens, call end_of_script() at the end
+		trap end_of_script EXIT
+
+		# run the test
+		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$full_directory/libipv6_care.so" eval "$program_to_test"
+		# done.
+
+		# check if some subprocesses are still running
+		while true
+		do
+			get_process_list > /tmp/.plist_$$_end
+
+			subprocesses_list=$(diff /tmp/.plist_$$_init /tmp/.plist_$$_end | grep -vw ps | grep -x ">.*" | 
+						awk '{ print $2 }')
+			subprocesses_list=$(echo $subprocesses_list) 	# convert linebreaks to spaces
+			if [ "$subprocesses_list" != "" ]
+			then
+				echo "Some subprocesses started by the command are still running: $subprocesses_list. Waiting... (Press Ctrl-C to stop waiting)"
+				sleep 1
+			else
+				break
+			fi
+		done
+
+		;;
+	*)
+		echo >&2
+		echo "Usage: $this_program [ sh[ell] [-o] [-v] | check [-v] <program_command_line> ]" >&2
+		echo >&2
+		echo "Examples:" >&2
+		echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
+		echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
+		echo "$this_program shell 		# start IPv6 CARE shell - log all network-related programs" >&2
+		echo "$this_program shell -o 		# start IPv6 CARE shell - only log non-IPv6-compliant programs" >&2
+		echo >&2
+	        exit
+		;;
+esac
+
