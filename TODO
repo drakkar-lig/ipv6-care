@@ -1,14 +1,19 @@
 
 
 Court terme:
-- installation de bash_completion 
-- mettre a jour la doc 2.3
-- sortir version 2.3
+- multithreading avec gettid()
+- ajouter "verify binary" avec un test utilisant file (verif statique ou pas) et ldd pour savoir si IPv6 CARE va marcher
+- corriger bugs:
+	- droits 777 sur les repertoires crees sinon pb si on utilise root la premiere fois
+	- IPV6 CARE detected: select() with [ writefds[1]=1 ] -> c est pas des sockets ?
+- mettre a jour la doc 2.4
+- sortir version 2.4
 - tester:
 	- faire marcher LD_PRELOAD=...patching.so ssh ui
 	- faire marcher LD_PRELOAD=...patching.so /etc/init.d/mysqld start
 	- faire marcher en le mettant dans /etc/ld.so.preload
 - utiliser /etc/ld.so.preload pour le mode install globale au systeme
+- tester
 - mettre a jour la doc 3.0
 - sortir version 3.0
 
