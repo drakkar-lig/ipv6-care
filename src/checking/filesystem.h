@@ -23,12 +23,14 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-1.0:	Creation
+Etienne DUBLE 	-2.4:	Thread management
 
 */
 #ifndef __FILESYSTEM_H__
 #define __FILESYSTEM_H__
 int recursive_mkdir(char *dir);
-char *get_and_create_the_directory_related_to_the_program();
+char *get_or_create_the_directory_related_to_the_program();
+char *get_or_create_the_directory_related_to_the_thread();
 FILE *open_log_file();
 #endif
 

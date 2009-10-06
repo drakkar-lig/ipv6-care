@@ -1,12 +1,11 @@
-
-
 Court terme:
-- multithreading avec gettid()
-- ajouter "verify binary" avec un test utilisant file (verif statique ou pas) et ldd pour savoir si IPv6 CARE va marcher
+- ajouter "binary lookup" avec un test utilisant file (verif statique ou pas) et ldd pour savoir si IPv6 CARE va marcher
+- passer en 2.4 les modifs 3.0 existantes ?
 - corriger bugs:
 	- droits 777 sur les repertoires crees sinon pb si on utilise root la premiere fois
 	- IPV6 CARE detected: select() with [ writefds[1]=1 ] -> c est pas des sockets ?
 - mettre a jour la doc 2.4
+- indiquer dans la doc que sudo dans sa conf par defaut ne passe pas la variable LD_PRELOAD donc dans ipv6_care shell les commandes sudo ne sont pas verifiees
 - sortir version 2.4
 - tester:
 	- faire marcher LD_PRELOAD=...patching.so ssh ui
@@ -16,8 +15,6 @@ Court terme:
 - tester
 - mettre a jour la doc 3.0
 - sortir version 3.0
-
-
-Versions suivantes:
+- moyen d'utiliser ld, ld_static, etc pour corriger un executable de maniere statique
 - pour les conversions en chaine d'adresses IPv6, tronquer pour qu'elle aient une taille au max egales a 15 caracteres (les plus longues adresses IPv4 etant xxx.xxx.xxx.xxx). On tronque le debut car la fin est souvent plus significative. 
 par ex: 2001:660:3302:7006::3 -> ...3302:7006::3

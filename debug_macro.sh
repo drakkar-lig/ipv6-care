@@ -1,10 +1,13 @@
 #!/bin/bash
-cp overwritten_functions.c overwritten_functions.c.sav
-cp overwritten_functions.c overwritten_functions.c.sav$$
-gcc -E -P overwritten_functions.c | indent -st > overwritten_functions.debug
-cp overwritten_functions.debug overwritten_functions.c
+cp src/checking/overwritten_functions.c src/checking/overwritten_functions.c.sav
+cp src/checking/overwritten_functions.c src/checking/overwritten_functions.c.sav$$
+gcc -E -P -Isrc/common src/checking/overwritten_functions.c | indent -st > src/checking/overwritten_functions.debug
+cp src/checking/overwritten_functions.debug src/checking/overwritten_functions.c
 make
+sudo make install
 echo -n "DO THE DEBUG THEN PRESS <ENTER>... "
 read a
-mv overwritten_functions.c.sav overwritten_functions.c
+mv src/checking/overwritten_functions.c.sav src/checking/overwritten_functions.c
+touch src/checking/overwritten_functions.c
 make
+sudo make install

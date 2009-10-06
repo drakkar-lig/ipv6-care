@@ -33,7 +33,5 @@ void register_info_end();
 void register_info_int(char *name, int value);
 void register_info_chars(char *name, char *value);
 void do_not_log_this_function();
-
-extern int log_needed; 
 #endif
 

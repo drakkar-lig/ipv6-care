@@ -70,48 +70,58 @@ void init_lib()
 	// let's get the full command line of the program for future reference
 	c[1] = '\0';
 	fp = fopen("/proc/self/cmdline", "r");
-	while (!feof(fp))
+	if (fp != NULL)
 	{
-		fread(c, 1, 1, fp);
-		if (c[0] == '\0')
+		while (!feof(fp))
 		{
-			c[0] = ' ';
-		}
-		append_to_string(&program_command_line, c);
-	}
-	fclose(fp);
-	program_command_line[strlen(program_command_line)-2] = '\0'; // it ends with two '\0' converted to spaces
-
-	// and the program basename
-	// Normally it is the first word of the process command line
-	// but in the case of a script, the command line would be for example
-	// /usr/bin/python my_script.py
-	// so in this case we try to get 'my_script.py' instead of 'python' in order to be more
-	// explicit about the program being run.
-	substring = strstr(program_command_line, getenv("_"));
-	if (substring == NULL)
-	{	// we point to the first word
-		asprintf(&path_of_program_alloc, "%s", program_command_line);
-		
-		// we seperate this first word by putting a '\0' after it
-		char_pointer = path_of_program_alloc;
-		while(*char_pointer != '\0')
-		{
-			if (isspace(*char_pointer))
+			fread(c, 1, 1, fp);
+			if (c[0] == '\0')
 			{
-				*char_pointer = '\0';
-				break;
+				c[0] = ' ';
 			}
-			char_pointer++;
+			append_to_string(&program_command_line, c);
 		}
+		fclose(fp);
+		program_command_line[strlen(program_command_line)-2] = '\0'; // it ends with two '\0' converted to spaces
+
+		// and the program basename
+		// Normally it is the first word of the process command line
+		// but in the case of a script, the command line would be for example
+		// /usr/bin/python my_script.py
+		// so in this case we try to get 'my_script.py' instead of 'python' in order to be more
+		// explicit about the program being run.
+		substring = strstr(program_command_line, getenv("_"));
+		if (substring == NULL)
+		{	// we point to the first word
+			asprintf(&path_of_program_alloc, "%s", program_command_line);
+			
+			// we seperate this first word by putting a '\0' after it
+			char_pointer = path_of_program_alloc;
+			while(*char_pointer != '\0')
+			{
+				if (isspace(*char_pointer))
+				{
+					*char_pointer = '\0';
+					break;
+				}
+				char_pointer++;
+			}
+		}
+		else
+		{
+			asprintf(&path_of_program_alloc, "%s", getenv("_"));
+		}
+
+		asprintf(&program_basename, "%s", basename(path_of_program_alloc));
+		free(path_of_program_alloc);
 	}
 	else
 	{
 		asprintf(&path_of_program_alloc, "%s", getenv("_"));
+		asprintf(&program_basename, "%s", basename(path_of_program_alloc));
+		free(path_of_program_alloc);
+		asprintf(&program_command_line, "%s", program_basename);
 	}
-
-	asprintf(&program_basename, "%s", basename(path_of_program_alloc));
-	free(path_of_program_alloc);
 
 	// let's save the interpreter name into the variable interpreter_name
 	save_interpreter_name();

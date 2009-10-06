@@ -14,6 +14,7 @@ remove_prefix()
 	COMP_LINE="${COMP_LINE#ipv6_care[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#check[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#shell[[:space:]]*}"
+	COMP_LINE="${COMP_LINE#verify-binary[[:space:]]*}"
 	num_removed_words=$((num_removed_words +2))
 	if [ "${COMP_WORDS[num_removed_words]}" = "-o" -a $COMP_CWORD -gt $num_removed_words ]
 	then
@@ -92,7 +93,7 @@ complete_ipv6_care()
 	
 	if [ $COMP_CWORD = "1" ]
 	then
-		COMPREPLY=( $(compgen -W "check shell" -- "$cur") );
+		COMPREPLY=( $(compgen -W "check shell verify-binary" -- "$cur") );
 	else
 		MAIN_OPTION="${COMP_WORDS[1]}"
 
@@ -143,6 +144,9 @@ complete_ipv6_care()
 						fi
 					fi
 				fi
+				;;
+			"verify-binary")
+				COMPREPLY=( $(compgen -c -- "$cur") )
 				;;
 		esac
 	fi

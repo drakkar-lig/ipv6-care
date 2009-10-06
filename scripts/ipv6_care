@@ -29,6 +29,7 @@
 # Etienne DUBLE 	-2.2:	Use tput to get number of COLUMNS
 # Etienne DUBLE 	-2.2:	Verbose option activating online display of function calls
 # Etienne DUBLE 	-2.3:	More coherence in colors
+# Etienne DUBLE 	-2.4:	Reorganised the source tree
 # 
 
 # update the COLUMNS variable
@@ -38,11 +39,13 @@ then
 	COLUMNS=70
 fi
 
-# check where is libipv6_care.so
+# check where is libipv6_care_checking.so
 full_directory=$(cd $(dirname "$0"); pwd)
 if [ "$full_directory" = "/usr/bin" ]
 then
 	full_directory="/usr/lib"
+else
+	full_directory="$full_directory/../out"
 fi
 
 this_program=$(basename $0)
@@ -50,9 +53,9 @@ this_program=$(basename $0)
 GREEN="\033[32;1m"
 ENDGREEN="\033[0m"
 
-if [ ! -f "$full_directory/libipv6_care.so" ]
+if [ ! -f "$full_directory/libipv6_care_checking.so" ]
 then
-	echo "libipv6_care.so was not found! Aborting." >&2
+	echo "libipv6_care_checking.so was not found! Aborting." >&2
 	exit
 fi
 
@@ -130,7 +133,7 @@ case "$1" in
 		esac
 		echo -e "$ENDGREEN"
 
-		export LD_PRELOAD="$full_directory/libipv6_care.so"
+		export LD_PRELOAD="$full_directory/libipv6_care_checking.so"
 
 		PROMPT_COMMAND="ipv6_care_show_directories" 
 		PS1="$GREEN[IPv6 CARE]$ENDGREEN \w\$ "
@@ -238,7 +241,7 @@ case "$1" in
 		trap end_of_script EXIT
 
 		# run the test
-		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$full_directory/libipv6_care.so" eval "$program_to_test"
+		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$full_directory/libipv6_care_checking.so" eval "$program_to_test"
 		# done.
 
 		# check if some subprocesses are still running

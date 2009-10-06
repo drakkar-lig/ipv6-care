@@ -24,13 +24,17 @@ Nov 25, 2008.
 Last modifications: 
 Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.2:	get_program_name() no longer used
-Etienne DUBLE 	-3.0:	Moved to the common directory
+Etienne DUBLE 	-2.4:	Moved to the common directory
+Etienne DUBLE 	-2.4:	Added get_thread_id
 
 */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
@@ -67,3 +71,9 @@ char *get_program_name()
 	return getenv("_");
 }
 */
+
+int get_thread_id()
+{
+	return syscall(SYS_gettid);
+}
+

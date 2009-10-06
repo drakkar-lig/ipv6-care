@@ -64,7 +64,7 @@ install:
 	@cp -f out/libipv6_care_patching.so /usr/lib/
 	@if [ -d /etc/bash_completion.d ] ; \
 	 then 	cp scripts/complete.sh /etc/bash_completion.d/ipv6_care ; \
-	 	echo "bash completion will only be available when you start a new bash session." ; \
+	 	echo "bash completion will only be updated when you start a new bash session." ; \
 	 fi
 	@echo "install done."
 

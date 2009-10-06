@@ -27,6 +27,7 @@ Etienne DUBLE 	- 1.1: 	Did the original call first in order to get the result
 			available for the analysis
 Etienne DUBLE 	- 2.2:	Reworked init_lib mechanism and implementation
 Etienne DUBLE 	- 2.3:	Corrected the comment
+Etienne DUBLE   - 2.4:  Thread management
 
 */
 #ifndef __MACROS_H__
@@ -38,9 +39,10 @@ Etienne DUBLE 	- 2.3:	Corrected the comment
 #include "function_state.h"
 #include "common_macros.h"
 
-extern int function_depth;
 extern int max_function_depth_reported;
-extern int function_analysis_started;
+
+extern __thread int function_depth;
+extern __thread int function_analysis_started;
 
 /*
  * Please first look at the file overwritten_function.c to understand 

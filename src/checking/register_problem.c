@@ -24,6 +24,7 @@ Nov 25, 2008.
 Last modifications: 
 Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Added warning about interpreted languages
+Etienne DUBLE 	-2.4:	Thread management
 
 */
 #define _GNU_SOURCE
@@ -45,19 +46,20 @@ extern int errno;
 #define __PROBLEM_DESCRIPTION_FILENAME 	"problem_description"
 
 extern int interpreted_language;
+extern __thread int log_needed;
 
 // this function writes an IPv6 compliance warning, with its description and
 // the current process stack, and writes the log
 void write_problem(int is_an_error, char *title, char *content)
 {
 	FILE *file;
-	char *directory_path_alloc;
+	char *directory_path_alloc, *directory_path;
 	char *full_filename_alloc;
 
-	directory_path_alloc = get_and_create_the_directory_related_to_the_program();
-	if (directory_path_alloc != NULL)
+	directory_path = get_or_create_the_directory_related_to_the_thread();
+	if (directory_path != NULL)
 	{	
-		append_to_string(&directory_path_alloc, "/%s/%s", 
+		asprintf(&directory_path_alloc, "%s/%s/%s", directory_path, 
 			(is_an_error == ERROR) ? __IPV6_COMPLIANCE_ERRORS_DIR : __IPV6_COMPLIANCE_WARNINGS_DIR, 
 			title);
 	

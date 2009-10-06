@@ -26,6 +26,7 @@ Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.1:	Suppress compilation warning on recent compilers
 Etienne DUBLE 	-2.3:	remove " with []" when no arguments are logged
+Etienne DUBLE 	-2.4:	check if the log file could be opened
 
 */
 #define _GNU_SOURCE
@@ -38,15 +39,16 @@ Etienne DUBLE 	-2.3:	remove " with []" when no arguments are logged
 #include "filesystem.h"
 #include "interpreted_language.h"
 
-extern int function_depth;
-extern int log_needed;
-extern char *log_file_content;
-extern char *log_function_line;
-extern int log_this_function;
-extern int index_last_line;
 extern int log_all;
 extern int interpreted_language;
 extern int verbose_level;
+
+extern __thread int function_depth;
+extern __thread int log_needed;
+extern __thread char *log_file_content;
+extern __thread char *log_function_line;
+extern __thread int index_last_line;
+extern __thread int log_this_function;
 
 #define GREEN "\033[32;1m"
 #define BLUE "\033[34;1m" 
@@ -63,12 +65,15 @@ void log_if_needed()
 		(log_file_content != NULL))
 	{
 		file = open_log_file();
-		fprintf(file, "%s", log_file_content);
-		if (interpreted_language == 1)
+		if (file != NULL)
 		{
-			fprintf(file, "%s", WARNING_INTERPRETED_LANGUAGE);
+			fprintf(file, "%s", log_file_content);
+			if (interpreted_language == 1)
+			{
+				fprintf(file, "%s", WARNING_INTERPRETED_LANGUAGE);
+			}
+			fclose(file);
 		}
-		fclose(file);
 	}
 }
 
