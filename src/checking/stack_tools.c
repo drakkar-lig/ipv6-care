@@ -28,6 +28,7 @@ Etienne DUBLE   -2.0:	Improved stack trace if function not found
 Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.2:	system() -> run_command() => Disable LD_PRELOAD in the subprocesses
 Etienne DUBLE 	-2.2:	get_interpreter_name() -> save_interpreter_name()
+Etienne DUBLE 	-2.4:	Provide diagnostic if system command fails
 
 */
 #ifndef _GNU_SOURCE
@@ -198,7 +199,7 @@ void write_stack_file(char *directory)
 					  "} >> %s/%s", interpreted_language, directory, __PROCESS_STACKS_FILENAME);
 
 	// execute the command
-	run_command(command);
+	run_command(command, "create the file called 'process_stacks'");
 	free(command);
 
 	free (strings);

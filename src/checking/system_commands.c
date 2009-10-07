@@ -23,6 +23,7 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-2.2:	Creation
+Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
 
 */
 #define _GNU_SOURCE
@@ -30,6 +31,11 @@ Etienne DUBLE 	-2.2:	Creation
 #include <stdlib.h>
 
 #include "append_to_string.h"
+#include "common_colors.h"
+
+#define FAILURE_DIAGNOSIS_PART1 "** IPv6 CARE failed to"
+#define FAILURE_DIAGNOSIS_PART2 "because"
+#define FAILURE_DIAGNOSIS_PART3 ".\n** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this.\n"
 
 extern char *ld_preload_value;
 
@@ -49,10 +55,19 @@ void set_ld_preload()
 	setenv("LD_PRELOAD", ld_preload_value, 1);
 }
 
-void get_result_of_command(char **storage_string, char *command)
+void write_failure_diagnosis(char *description, char *reason)
+{
+	printf(	RED 	"** IPv6 CARE failed to %s because %s.\n"
+		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this.\n" 
+		ENDCOLOR, 
+		description, reason);
+}
+
+int get_result_of_command(char **storage_string, char *command, char *description)
 {
 	FILE *fp;
 	char c[2];
+	int result;
 
 	// we temporarily unset LD_PRELOAD (we don't want the 
 	// subprocess created by popen to be monitored by ipv6-care)
@@ -60,32 +75,55 @@ void get_result_of_command(char **storage_string, char *command)
 
 	c[1] = '\0';
 
-	// let's run the command and read its output
+	// let's run the command
 	fp = popen(command, "r");
-	while (!feof(fp))
+	if (fp == NULL)
 	{
-		fread(c, 1, 1, fp);
-		if ((c[0] != '\n') && (c[0] != '\r'))
+		// provide diagnosis in case of problems
+		write_failure_diagnosis(description, "running the popen() function failed");
+		result = -1;
+	}
+	else
+	{
+		// let's read its output
+		while (!feof(fp))
 		{
-			append_to_string(storage_string, c);
+			fread(c, 1, 1, fp);
+			if ((c[0] != '\n') && (c[0] != '\r'))
+			{
+				append_to_string(storage_string, c);
+			}
 		}
+		result = 0;
 	}
 	pclose(fp);
 
 	// we restore LD_PRELOAD
 	set_ld_preload();
+
+	return result;
 }
 
-void run_command(char *command)
+int run_command(char *command, char *description)
 {
-	// we temporarily unset LD_PRELOAD (we don't want the 
+	int result;
+
+	// temporarily unset LD_PRELOAD (we don't want the 
 	// subprocess created by system() to be monitored by ipv6-care)
 	unset_ld_preload();
 
 	// let's run the command
-	system(command);
+	result = system(command);
+
+	// provide diagnosis in case of problems
+	if (result != 0)
+	{
+		write_failure_diagnosis(description, "an attempt to create a subprocess executing a shell command failed");
+	}
 	
-	// we restore LD_PRELOAD
+	// restore LD_PRELOAD
 	set_ld_preload();
+
+	return result;
 }
 

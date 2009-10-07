@@ -18,18 +18,21 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
+Oct 7, 2009.
 ---------------------------------------------------------------------
 
 Last modifications: 
-Etienne DUBLE 	-2.2:	Creation
-Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
+Etienne DUBLE 	-2.4:	Creation
 
 */
-#ifndef __SYSTEM_COMMANDS_H__
-#define __SYSTEM_COMMANDS_H__
 
-int get_result_of_command(char **storage_string, char *command, char *description);
-int run_command(char *command, char *description);
+#ifndef __COMMON_COLORS_H__
+#define __COMMON_COLORS_H__
+
+#define RED "\033[31;1m"
+#define GREEN "\033[32;1m"
+#define BLUE "\033[34;1m" 
+#define ENDCOLOR "\033[0m"
 
 #endif
+

@@ -38,6 +38,7 @@ Etienne DUBLE 	-2.4:	check if the log file could be opened
 #include "append_to_string.h"
 #include "filesystem.h"
 #include "interpreted_language.h"
+#include "common_colors.h"
 
 extern int log_all;
 extern int interpreted_language;
@@ -49,10 +50,6 @@ extern __thread char *log_file_content;
 extern __thread char *log_function_line;
 extern __thread int index_last_line;
 extern __thread int log_this_function;
-
-#define GREEN "\033[32;1m"
-#define BLUE "\033[34;1m" 
-#define ENDCOLOR "\033[0m"
 
 #define ONLINE_LOG_PREFIX GREEN "IPV6 CARE detected:" BLUE
 #define ONLINE_LOG_SUFFIX ENDCOLOR
