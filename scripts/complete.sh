@@ -14,8 +14,13 @@ remove_prefix()
 	COMP_LINE="${COMP_LINE#ipv6_care[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#check[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#shell[[:space:]]*}"
-	COMP_LINE="${COMP_LINE#verify-binary[[:space:]]*}"
+	COMP_LINE="${COMP_LINE#binary[[:space:]]*}"
 	num_removed_words=$((num_removed_words +2))
+	if [ "${COMP_WORDS[num_removed_words]}" = "lookup" -a $COMP_CWORD -gt $num_removed_words ]
+	then
+		COMP_LINE="${COMP_LINE#lookup[[:space:]]*}"
+		num_removed_words=$((num_removed_words +1))
+	fi
 	if [ "${COMP_WORDS[num_removed_words]}" = "-o" -a $COMP_CWORD -gt $num_removed_words ]
 	then
 		COMP_LINE="${COMP_LINE#-o[[:space:]]*}"
@@ -93,7 +98,7 @@ complete_ipv6_care()
 	
 	if [ $COMP_CWORD = "1" ]
 	then
-		COMPREPLY=( $(compgen -W "check shell verify-binary" -- "$cur") );
+		COMPREPLY=( $(compgen -W "check shell binary" -- "$cur") );
 	else
 		MAIN_OPTION="${COMP_WORDS[1]}"
 
@@ -145,8 +150,24 @@ complete_ipv6_care()
 					fi
 				fi
 				;;
-			"verify-binary")
-				COMPREPLY=( $(compgen -c -- "$cur") )
+			"binary")
+				COMPREPLY=()
+				if [ "${COMP_WORDS[2]}" = "lookup" -a $COMP_CWORD -gt 2 ] 
+				then
+					if [ $COMP_CWORD -gt 3 ]
+					then
+						COMPREPLY=()
+					else
+						COMPREPLY=( $(compgen -c -- "$cur") );
+					fi
+				else
+					if [ $COMP_CWORD -gt 2 ]
+					then
+						COMPREPLY=()
+					else
+						COMPREPLY=( $(compgen -W "lookup" -- "$cur") );
+					fi
+				fi
 				;;
 		esac
 	fi

@@ -40,12 +40,19 @@ then
 fi
 
 # check where is libipv6_care_checking.so
-full_directory=$(cd $(dirname "$0"); pwd)
-if [ "$full_directory" = "/usr/bin" ]
-then
-	full_directory="/usr/lib"
-else
-	full_directory="$full_directory/../out"
+path_to_scripts=$(cd $(dirname "$0"); pwd)
+if [ "$path_to_scripts" = "/usr/bin" ]
+then	# package was installed in system standard locations
+	path_to_libraries="/usr/lib"
+else	# package was not installed (no 'make install') 
+	# and the script of the installation directory was called using
+	# '<path_to_scripts_subdirectory>/ipv6_care'
+
+	# make available the other scripts
+	export PATH="$path_to_scripts:$PATH"
+
+	# the path to the libraries
+	path_to_libraries="$path_to_scripts/../out"
 fi
 
 this_program=$(basename $0)
@@ -53,11 +60,27 @@ this_program=$(basename $0)
 GREEN="\033[32;1m"
 ENDGREEN="\033[0m"
 
-if [ ! -f "$full_directory/libipv6_care_checking.so" ]
+checking_library="$path_to_libraries/libipv6_care_checking.so"
+
+if [ ! -f "$checking_library" ]
 then
-	echo "libipv6_care_checking.so was not found! Aborting." >&2
+	echo "$(basename "$checking_library") was not found! Aborting." >&2
 	exit
 fi
+
+print_usage()
+{
+	echo >&2
+	echo "Usage: $this_program [ sh[ell] [-o] [-v] | check [-v] <program_command_line> | binary lookup <path_to_binary> ]" >&2
+	echo >&2
+	echo "Examples:" >&2
+	echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
+	echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
+	echo "$this_program shell 			# start IPv6 CARE shell - log all network-related programs" >&2
+	echo "$this_program shell -o 			# start IPv6 CARE shell - only log non-IPv6-compliant programs" >&2
+	echo "$this_program binary lookup /bin/nc 	# Verify that IPv6 CARE can work correctly with the binary 'nc'" >&2
+	echo >&2
+}
 
 ipv6_care_get_diagnosis_directories()
 {
@@ -133,7 +156,7 @@ case "$1" in
 		esac
 		echo -e "$ENDGREEN"
 
-		export LD_PRELOAD="$full_directory/libipv6_care_checking.so"
+		export LD_PRELOAD="$checking_library"
 
 		PROMPT_COMMAND="ipv6_care_show_directories" 
 		PS1="$GREEN[IPv6 CARE]$ENDGREEN \w\$ "
@@ -241,7 +264,7 @@ case "$1" in
 		trap end_of_script EXIT
 
 		# run the test
-		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$full_directory/libipv6_care_checking.so" eval "$program_to_test"
+		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$checking_library" eval "$program_to_test"
 		# done.
 
 		# check if some subprocesses are still running
@@ -262,16 +285,25 @@ case "$1" in
 		done
 
 		;;
+
+	"binary")
+		shift
+		if [ "$1" != "lookup" -o "$2" = "" ]
+		then
+			print_usage
+			exit
+		else
+			if [ ! -f "$2" ]
+			then
+				print_usage
+				exit
+			fi
+		fi
+		IPv6_CARE_binary_lookup.sh "$2" "$checking_library"
+		;;
+
 	*)
-		echo >&2
-		echo "Usage: $this_program [ sh[ell] [-o] [-v] | check [-v] <program_command_line> ]" >&2
-		echo >&2
-		echo "Examples:" >&2
-		echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
-		echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
-		echo "$this_program shell 		# start IPv6 CARE shell - log all network-related programs" >&2
-		echo "$this_program shell -o 		# start IPv6 CARE shell - only log non-IPv6-compliant programs" >&2
-		echo >&2
+		print_usage
 	        exit
 		;;
 esac

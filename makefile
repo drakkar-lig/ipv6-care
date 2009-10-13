@@ -60,6 +60,7 @@ clean:
 
 install:
 	@cp -f scripts/ipv6_care /usr/bin/
+	@cp -f scripts/IPv6_CARE_*.sh /usr/bin/
 	@cp -f out/libipv6_care_checking.so /usr/lib/
 	@cp -f out/libipv6_care_patching.so /usr/lib/
 	@if [ -d /etc/bash_completion.d ] ; \
@@ -70,6 +71,7 @@ install:
 
 uninstall:
 	rm -f /usr/bin/ipv6_care
+	rm -f /usr/bin/IPv6_CARE_*.sh
 	rm -f /usr/lib/libipv6_care_checking.so
 	rm -f /usr/lib/libipv6_care_patching.so
 	rm -f /etc/bash_completion.d/ipv6_care
@@ -88,12 +90,12 @@ endef
 
 binary_package: /tmp/$(PACKAGE_NAME)-bin-$(ARCHITECTURE).tar.gz
 
-/tmp/%-$(ARCHITECTURE).tar.gz: out/libipv6_care_checking.so out/libipv6_care_patching.so scripts/ipv6_care makefile scripts/complete.sh README LICENSE
+/tmp/%-$(ARCHITECTURE).tar.gz: out/libipv6_care_checking.so out/libipv6_care_patching.so scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE
 	@$(package_creation)
 
 source_package: /tmp/$(PACKAGE_NAME)-src.tar.gz
 
-/tmp/%.tar.gz: src/*/*.c src/*/*.h scripts/ipv6_care makefile scripts/complete.sh README LICENSE
+/tmp/%.tar.gz: src/*/*.c src/*/*.h scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE
 	@$(package_creation)
 
 -include out/*/*.d
