@@ -26,6 +26,7 @@ Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.2:	Added test_if_fd_is_a_socket
 Etienne DUBLE 	-2.3:	Removed test_if_fd_is_a_socket and use test_if_fd_is_a_network_socket
 Etienne DUBLE 	-2.3:	Changed test_if_fd_sets_contain_sockets to test_if_fd_sets_contain_network_sockets
+Etienne DUBLE 	-2.4:	return value of test_if_fd_is_a_network_socket must be 1
 Etienne DUBLE 	-3.0:	networking_tools.h -> common_networking_tools.h
 
 */
@@ -49,7 +50,7 @@ int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *w
 	{
 		if ((readfds != 0)&&(FD_ISSET(n, readfds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				result = 1; // true
 				break;
@@ -58,7 +59,7 @@ int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *w
 
 		if ((writefds != 0)&&(FD_ISSET(n, writefds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				result = 1; // true
 				break;
@@ -66,7 +67,7 @@ int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *w
 		}
 		if ((errorfds != 0)&&(FD_ISSET(n, errorfds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				result = 1; // true
 				break;
@@ -86,7 +87,7 @@ void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd
 	{
 		if ((readfds != 0)&&(FD_ISSET(n, readfds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				snprintf(info_name, sizeof(info_name) -1, "readfds[%d]", n);
 				__REGISTER_INFO_CHARS(info_name, "1");
@@ -95,7 +96,7 @@ void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd
 
 		if ((writefds != 0)&&(FD_ISSET(n, writefds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				snprintf(info_name, sizeof(info_name) -1, "writefds[%d]", n);
 				__REGISTER_INFO_CHARS(info_name, "1");
@@ -103,7 +104,7 @@ void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd
 		}
 		if ((errorfds != 0)&&(FD_ISSET(n, errorfds) != 0))
 		{
-			if (test_if_fd_is_a_network_socket(n))
+			if (test_if_fd_is_a_network_socket(n) == 1)
 			{
 				snprintf(info_name, sizeof(info_name) -1, "errorfds[%d]", n);
 				__REGISTER_INFO_CHARS(info_name, "1");

@@ -32,8 +32,11 @@
 # Etienne DUBLE 	-3.0:	Introduced patching mode - reorganised the source tree - automatic dependencies
 # 
 
-PACKAGE_NAME=$(subst -src,,$(notdir $(CURDIR)))
+VERSION=2.4
+
+PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)
+OPTIONS=-g -Wall -W
 
 list_objects=$(shell ls src/$(1)/*.c 2>/dev/null | sed -e "s/\.c/\.o/g" | sed -e "s/src/out/g") 
 
@@ -47,13 +50,13 @@ out_dir_structure:
 	@mkdir -p out/checking out/patching out/common 
 
 out/%.o: src/%.c 
-	gcc -g -Wall -fPIC -MMD -c -Isrc/common -o $@ src/$*.c
+	gcc $(OPTIONS) -fPIC -MMD -c -Isrc/common -o $@ src/$*.c
 
 out/libipv6_care_checking.so: $(ALL_ANALYSIS_OBJECTS) $(ALL_COMMON_OBJECTS)
-	gcc -g -Wall -shared -Wl,-soname,libipv6_care_checking.so -o $@ $^ -ldl
+	gcc $(OPTIONS) -shared -Wl,-soname,libipv6_care_checking.so -o $@ $^ -ldl
 
 out/libipv6_care_patching.so: $(ALL_PATCHING_OBJECTS) $(ALL_COMMON_OBJECTS)
-	gcc -g -Wall -shared -Wl,-soname,libipv6_care_patching.so -o $@ $^ -ldl
+	gcc $(OPTIONS) -shared -Wl,-soname,libipv6_care_patching.so -o $@ $^ -ldl
 
 clean:
 	rm -rf out 

@@ -115,7 +115,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 	while (num_dummy_sockets < MAX_FREE_FILE_DESCRIPTORS)
 	{
 		// create the socket
-		new_socket = socket(family, socktype, 0);
+		new_socket = socket(family, socktype, protocol);
 		if (new_socket == -1)
 		{	// if error stop
 			break;
@@ -282,7 +282,7 @@ void close_sockets_related_to_fd(int fd)
 	}
 }
 
-void manage_socket_accesses_on_fdset(enum list_of_fd_access_types access_type, int *nfds, fd_set *initial_fds, fd_set *final_fds)
+void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *final_fds)
 {
 	int fd, new_socket_created;
 	int is_a_listening_socket;
@@ -324,7 +324,7 @@ void manage_socket_accesses_on_fdset(enum list_of_fd_access_types access_type, i
 	}
 }
 
-void remap_changes_to_initial_fdset(enum list_of_fd_access_types access_type, int nfds, fd_set *initial_fds, fd_set *final_fds)
+void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds)
 {
 	int fd, initial_socket;
 

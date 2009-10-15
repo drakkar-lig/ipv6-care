@@ -25,13 +25,13 @@ Last modifications:
 Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.1:	get_ip_string -> get_ip_string_and_port
 Etienne DUBLE 	-2.3:	Added test_if_fd_is_a_network_socket
+Etienne DUBLE 	-2.4:	Removed test_if_fd_is_a_network_socket
 
 */
 #ifndef __NETWORKING_TOOLS_H__
 #define __NETWORKING_TOOLS_H__
 
 #include <sys/socket.h>
-int test_if_fd_is_a_network_socket(int fd);
 void get_ip_string_and_port(struct sockaddr *paddress, char *ip, int ip_length, int *port);
 char *get_family_string(int family);
 char *get_sock_type_string(int type);

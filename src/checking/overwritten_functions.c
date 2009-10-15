@@ -30,6 +30,7 @@ Etienne DUBLE 	-2.2:	interpreter_name now calculated in init_lib
 Etienne DUBLE 	-2.3:	add logging of freeaddrinfo()
 Etienne DUBLE 	-2.3:	only log operations on sockets AF_INET and AF_INET6
 Etienne DUBLE 	-2.3:	corrected gethostbyaddr()
+Etienne DUBLE 	-2.4:	included common_networking_tools.h
 
 */
 #include <netdb.h>
@@ -44,6 +45,7 @@ Etienne DUBLE 	-2.3:	corrected gethostbyaddr()
 #include "networking_tools.h"
 #include "fd_set_tools.h"
 #include "stack_tools.h"
+#include "common_networking_tools.h"
 
 #define INTERPRETER_MAX_SIZE	32
 #define IP_MAX_SIZE             64

@@ -30,6 +30,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <netdb.h>
 
 #include "fd_tools.h"
+#include "address_name_matches.h"
 #include "original_functions.h"
 
 #define OTHER_FAMILY(af) ((af == AF_INET6)?AF_INET:AF_INET6)
@@ -85,7 +86,7 @@ int connect(int s, const struct sockaddr *address,
 
 	result = original_connect(s, address, address_len);
 
-	if ((result == -1)&&(get_equivalent_address(address, address_len, new_sa, &new_sa_size) == 0))
+	if ((result == -1)&&(get_equivalent_address((struct sockaddr *)address, address_len, new_sa, &new_sa_size) == 0))
 	{
 		// retrieve the type of this socket
 		socktype_size = sizeof(socktype);
@@ -123,7 +124,7 @@ int getaddrinfo(const char *nodename,
 	{
 		for(paddress = *res; paddress != NULL; paddress = paddress->ai_next)
 		{
-			record_sa_address_name_match(paddress->ai_addr, nodename);
+			record_sa_address_name_match(paddress->ai_addr, (char *)nodename);
 		}
 	}
 	return result;
@@ -153,8 +154,8 @@ int gethostbyname_r(const char *name,
 {
 	int function_result;
 
-	result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
-	record_hostent(result);
+	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
+	record_hostent(*result);
 	return function_result;
 }
 
@@ -168,7 +169,7 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 	if ((node != NULL) && (nodelen != 0))
 	{
-		record_sa_address_name_match(sa, node);
+		record_sa_address_name_match((struct sockaddr *)sa, node);
 	}
 	return result;
 }
@@ -178,16 +179,19 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 {
 	int result;
 	fd_set final_readfds, final_writefds, final_errorfds;
+	int modifiable_nfds;
 
-	manage_socket_accesses_on_fdset(eAccessType_Read, nfds, readfds, &final_readfds);
-	manage_socket_accesses_on_fdset(eAccessType_Write, nfds, writefds, &final_writefds);
-	manage_socket_accesses_on_fdset(eAccessType_Error, nfds, errorfds, &final_errorfds);
+	modifiable_nfds = nfds;
 
-	result = original_pselect(nfds, &final_readfds, &final_writefds, &final_errorfds, timeout, sigmask);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, readfds, &final_readfds);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, writefds, &final_writefds);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, errorfds, &final_errorfds);
 
-	remap_changes_to_initial_fdset(eAccessType_Read, nfds, readfds, &final_readfds);
-	remap_changes_to_initial_fdset(eAccessType_Write, nfds, writefds, &final_writefds);
-	remap_changes_to_initial_fdset(eAccessType_Error, nfds, errorfds, &final_errorfds);
+	result = original_pselect(modifiable_nfds, &final_readfds, &final_writefds, &final_errorfds, timeout, sigmask);
+
+	remap_changes_to_initial_fdset(modifiable_nfds, readfds, &final_readfds);
+	remap_changes_to_initial_fdset(modifiable_nfds, writefds, &final_writefds);
+	remap_changes_to_initial_fdset(modifiable_nfds, errorfds, &final_errorfds);
 	return result;
 }
 
@@ -211,15 +215,15 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 
 	modifiable_nfds = nfds;
 
-	manage_socket_accesses_on_fdset(eAccessType_Read, &modifiable_nfds, readfds, &final_readfds);
-	manage_socket_accesses_on_fdset(eAccessType_Write, &modifiable_nfds, writefds, &final_writefds);
-	manage_socket_accesses_on_fdset(eAccessType_Error, &modifiable_nfds, errorfds, &final_errorfds);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, readfds, &final_readfds);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, writefds, &final_writefds);
+	manage_socket_accesses_on_fdset(&modifiable_nfds, errorfds, &final_errorfds);
 
 	result = original_select(modifiable_nfds, &final_readfds, &final_writefds, &final_errorfds, timeout);
 
-	remap_changes_to_initial_fdset(eAccessType_Read, modifiable_nfds, readfds, &final_readfds);
-	remap_changes_to_initial_fdset(eAccessType_Write, modifiable_nfds, writefds, &final_writefds);
-	remap_changes_to_initial_fdset(eAccessType_Error, modifiable_nfds, errorfds, &final_errorfds);
+	remap_changes_to_initial_fdset(modifiable_nfds, readfds, &final_readfds);
+	remap_changes_to_initial_fdset(modifiable_nfds, writefds, &final_writefds);
+	remap_changes_to_initial_fdset(modifiable_nfds, errorfds, &final_errorfds);
 	return result;
 }
 

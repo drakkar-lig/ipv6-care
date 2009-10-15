@@ -245,6 +245,7 @@ case "$1" in
 				echo "$directories"
 			else
 				echo "No IPv6 diagnosis was generated because no network-related function calls were detected."
+				echo "If this result is unexpected, try 'ipv6_care binary lookup <path_to_binary>'."
 			fi
 
 			echo -en "$GREEN"

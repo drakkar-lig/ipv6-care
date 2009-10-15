@@ -103,7 +103,7 @@ void write_stack_file(char *directory)
 		index_first_character_after_name = strcspn(strings[i], " (");
 
 		if (	(strstr(strings[i], "libipv6_care") != NULL) ||
-			(index_first_character_after_name == strlen(strings[i])) ||
+			(index_first_character_after_name == (int)strlen(strings[i])) ||
 			(strings[i][0] == '[') ||
 			(strchr(strings[i], '[') == NULL))
 		{	// in these cases we ignore this line

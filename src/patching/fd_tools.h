@@ -39,12 +39,13 @@ enum list_of_fd_access_types {
 	eAccessType_Connect
 };
 
-int manage_socket_access_on_fd(enum list_of_fd_access_types access_type, int fd);
-void close_sockets_related_to_fd(int fd);
-void manage_socket_accesses_on_fdset(enum list_of_fd_access_types access_type, int *nfds, fd_set *fds, fd_set *final_fds);
-void remap_changes_to_initial_fdset(enum list_of_fd_access_types access_type, int nfds, fd_set *initial_fds, fd_set *final_fds);
+int get_equivalent_address(struct sockaddr *sa, unsigned int sa_size, struct sockaddr *new_sa, unsigned int *new_sa_size);
+int create_socket_on_specified_free_fd(int fd, int family, int socktype, int protocol);
 int get_additional_listening_socket_if_needed(int initial_socket);
 int wait_on_two_sockets(int socket1, int socket2);
-int create_socket_on_specified_free_fd(int fd, int family, int socktype, int protocol);
+int manage_socket_access_on_fd(enum list_of_fd_access_types access_type, int fd);
+void close_sockets_related_to_fd(int fd);
+void manage_socket_accesses_on_fdset(int *nfds, fd_set *fds, fd_set *final_fds);
+void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds);
 
 #endif

@@ -33,10 +33,18 @@ Etienne DUBLE 	-3.0:	Creation
 
 void record_inet6_address_name_match(struct in6_addr *in6_a, char *node)
 {
+	// TO DO
+	// disable compiler warnings
+	in6_a = in6_a;
+	node = node;
 }
 
 void record_inet_address_name_match(struct in_addr *in_a, char *node)
 {
+	// TO DO
+	// disable compiler warnings
+	in_a = in_a;
+	node = node;
 }
 
 void record_sa_address_name_match(struct sockaddr *sa, char *node)

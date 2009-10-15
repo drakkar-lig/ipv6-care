@@ -25,10 +25,16 @@ Last modifications:
 Etienne DUBLE 	-3.0:	Creation
 
 */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <sys/select.h>
 
 #include "macros.h"
 #include "fd_tools.h"
