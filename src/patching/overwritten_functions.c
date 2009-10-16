@@ -34,6 +34,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include "original_functions.h"
 
 #define OTHER_FAMILY(af) ((af == AF_INET6)?AF_INET:AF_INET6)
+#define IS_AF_INET_OR_INET6(af) ((af == AF_INET)||(af == AF_INET6))
 
 // Start of the network-related functions overriden
 // ------------------------------------------------
@@ -43,12 +44,17 @@ int accept(int socket, struct sockaddr *address,
 {
 	int new_socket_created, resulting_socket;
 
-	new_socket_created = get_additional_listening_socket_if_needed(socket);
+	resulting_socket = socket; // default
 
-	if (new_socket_created != -1)
+	if IS_AF_INET_OR_INET6(address->sa_family)
 	{
-		// wait on the two file descriptors
-		resulting_socket = wait_on_two_sockets(socket, new_socket_created);
+		new_socket_created = get_additional_listening_socket_if_needed(socket);
+
+		if (new_socket_created != -1)
+		{
+			// wait on the two file descriptors
+			resulting_socket = wait_on_two_sockets(socket, new_socket_created);
+		}
 	}
 
 	return original_accept(resulting_socket, address, address_len);
@@ -86,7 +92,9 @@ int connect(int s, const struct sockaddr *address,
 
 	result = original_connect(s, address, address_len);
 
-	if ((result == -1)&&(get_equivalent_address((struct sockaddr *)address, address_len, new_sa, &new_sa_size) == 0))
+	if (		(result == -1)	&&
+			IS_AF_INET_OR_INET6(address->sa_family)	&&
+			(get_equivalent_address((struct sockaddr *)address, address_len, new_sa, &new_sa_size) == 0))
 	{
 		// retrieve the type of this socket
 		socktype_size = sizeof(socktype);
@@ -119,7 +127,7 @@ int getaddrinfo(const char *nodename,
 	struct addrinfo *paddress;
 
 	result = original_getaddrinfo(nodename, servname, hints, res);
-	
+/*	
 	if (result == 0)
 	{
 		for(paddress = *res; paddress != NULL; paddress = paddress->ai_next)
@@ -127,7 +135,7 @@ int getaddrinfo(const char *nodename,
 			record_sa_address_name_match(paddress->ai_addr, (char *)nodename);
 		}
 	}
-	return result;
+*/	return result;
 }
 
 struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
@@ -135,7 +143,7 @@ struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 	struct hostent *result;
 
 	result = original_gethostbyaddr(addr, len, type);
-	record_hostent(result);
+//	record_hostent(result);
 	return result;
 }
 
@@ -144,7 +152,7 @@ struct hostent *gethostbyname(const char *name)
 	struct hostent *result;
 
 	result = original_gethostbyname(name);
-	record_hostent(result);
+//	record_hostent(result);
 	return result;
 }
 
@@ -155,7 +163,7 @@ int gethostbyname_r(const char *name,
 	int function_result;
 
 	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
-	record_hostent(*result);
+//	record_hostent(*result);
 	return function_result;
 }
 
@@ -167,11 +175,11 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 	result = original_getnameinfo(sa, salen, node, nodelen, service, servicelen, flags);
 
-	if ((node != NULL) && (nodelen != 0))
+/*	if ((node != NULL) && (nodelen != 0))
 	{
 		record_sa_address_name_match((struct sockaddr *)sa, node);
 	}
-	return result;
+*/	return result;
 }
 
 int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
@@ -212,7 +220,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	int result;
 	fd_set final_readfds, final_writefds, final_errorfds;
 	int modifiable_nfds;
-
+	
 	modifiable_nfds = nfds;
 
 	manage_socket_accesses_on_fdset(&modifiable_nfds, readfds, &final_readfds);

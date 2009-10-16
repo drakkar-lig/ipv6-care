@@ -327,10 +327,20 @@ void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *fin
 void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds)
 {
 	int fd, initial_socket;
+	fd_set resulting_initial_fds;
+
+	// It seems doing a FD_ZERO on the provided initial_fds is a bit too intrusive.
+	// It caused problems with ssh, there might be a programming bug in it which comes
+	// to light when we try to FD_ZERO(initial_fds).
+	// So we do it in a less intrusive way:
+	// 1) We update a local fd_set called resulting_initial_fds
+	// 2) We report values to initial_fds but by changing only the values which are different
 
 	if (initial_fds != NULL)
 	{ 
-		FD_ZERO(initial_fds);
+		FD_ZERO(&resulting_initial_fds);
+
+		// 1)
 
 		for (fd = 0; fd < nfds; fd++)
 		{
@@ -339,12 +349,27 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 				initial_socket = find_initial_socket_for_created_socket(fd);
 				if (initial_socket == -1)
 				{	// fd was not created by IPv6 CARE, just set it back in initial_fds
-					FD_SET(fd, initial_fds);
+					FD_SET(fd, &resulting_initial_fds);
 				}
 				else
 				{	// fd was created by IPv6 CARE, set its initial_socket in initial_fds
-					FD_SET(initial_socket, initial_fds);
+					FD_SET(initial_socket, &resulting_initial_fds);
 				}
+			}
+		}
+
+		// 2)
+
+		for (fd = 0; fd < nfds; fd++)
+		{
+			if (FD_ISSET(fd, &resulting_initial_fds) && !FD_ISSET(fd, initial_fds))
+			{
+				FD_SET(fd, initial_fds);
+			}
+
+			if (!FD_ISSET(fd, &resulting_initial_fds) && FD_ISSET(fd, initial_fds))
+			{
+				FD_CLR(fd, initial_fds);
 			}
 		}
 	}
