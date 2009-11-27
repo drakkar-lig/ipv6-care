@@ -30,6 +30,8 @@
 # Etienne DUBLE 	-2.2:	Verbose option activating online display of function calls
 # Etienne DUBLE 	-2.3:	More coherence in colors
 # Etienne DUBLE 	-2.4:	Reorganised the source tree
+# Etienne DUBLE 	-3.0:	Introduced patching mode
+# Etienne DUBLE 	-3.0:	Introduced system patch
 # 
 
 # update the COLUMNS variable
@@ -58,9 +60,11 @@ fi
 this_program=$(basename $0)
 
 GREEN="\033[32;1m"
-ENDGREEN="\033[0m"
+RED="\033[31;1m"
+ENDCOLOR="\033[0m"
 
 checking_library="$path_to_libraries/libipv6_care_checking.so"
+patching_library="$path_to_libraries/libipv6_care_patching.so"
 
 if [ ! -f "$checking_library" ]
 then
@@ -68,17 +72,33 @@ then
 	exit
 fi
 
+if [ ! -f "$patching_library" ]
+then
+	echo "$(basename "$patching_library") was not found! Aborting." >&2
+	exit
+fi
+
 print_usage()
 {
 	echo >&2
-	echo "Usage: $this_program [ sh[ell] [-o] [-v] | check [-v] <program_command_line> | binary lookup <path_to_binary> ]" >&2
+	echo "Usage: simple modes:" >&2
+	echo "       $this_program patch <program_command_line>              # -> patch mode" >&2
+	echo "       $this_program check [-v] <program_command_line>         # -> check mode" >&2
+	echo "Usage: system set up mode:" >&2
+	echo "       sudo $this_program system patch                         # -> patch all programs" >&2
+	echo "Others:"	>&2
+	echo "       $this_program sh[ell] [-o] [-v]                         # -> shell" >&2
+	echo "       $this_program binary lookup <path_to_binary>            # -> self-diagnosis" >&2
 	echo >&2
 	echo "Examples:" >&2
+	echo "$this_program patch nc -l -p 3333		# Adapt the behavior of 'nc -l -p 3333' in order to make it IPv6 compliant" >&2
+	echo "$this_program patch service mysql start	# Adapt the behavior of mysql server in order to make it IPv6 compliant" >&2
 	echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
 	echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
 	echo "$this_program shell 			# start IPv6 CARE shell - log all network-related programs" >&2
 	echo "$this_program shell -o 			# start IPv6 CARE shell - only log non-IPv6-compliant programs" >&2
 	echo "$this_program binary lookup /bin/nc 	# Verify that IPv6 CARE can work correctly with the binary 'nc'" >&2
+	echo "sudo $this_program system patch	 	# Toggle patch-mode for all programs started on this system" >&2
 	echo >&2
 }
 
@@ -90,7 +110,7 @@ ipv6_care_get_diagnosis_directories()
 ipv6_care_show_directories()
 {
 	GREEN="\033[32;1m"
-	ENDGREEN="\033[0m"
+	ENDCOLOR="\033[0m"
 
 	new_number_of_directories=$(ipv6_care_get_diagnosis_directories | wc -l)
 	number_of_new_directories=$(($new_number_of_directories - $ipv6_care_prev_number_of_directories))
@@ -111,7 +131,7 @@ ipv6_care_show_directories()
 		done
 		echo -en "$GREEN"
 		echo -n  "IPv6 diagnosis for '$full_command_line' was generated in: $directory"
-		echo -e  "$ENDGREEN"
+		echo -e  "$ENDCOLOR"
 	done
 
 	export ipv6_care_prev_number_of_directories=$new_number_of_directories 	# for next call
@@ -154,12 +174,12 @@ case "$1" in
 				echo "Use '-v' if you want the functions calls displayed on the standard output." >&2
 				exit
 		esac
-		echo -e "$ENDGREEN"
+		echo -e "$ENDCOLOR"
 
 		export LD_PRELOAD="$checking_library"
 
 		PROMPT_COMMAND="ipv6_care_show_directories" 
-		PS1="$GREEN[IPv6 CARE]$ENDGREEN \w\$ "
+		PS1="$GREEN[IPv6 CARE]$ENDCOLOR \w\$ "
 
 		export PROMPT_COMMAND PS1 ipv6_care_prev_number_of_directories 
 		export -f ipv6_care_show_directories ipv6_care_get_diagnosis_directories
@@ -167,7 +187,7 @@ case "$1" in
 
 		echo -e "$GREEN"
 		echo "End of IPv6 CARE shell."
-		echo -e "$ENDGREEN"
+		echo -e "$ENDCOLOR"
 		;;
 
 	"check")
@@ -181,35 +201,9 @@ case "$1" in
 			verbose_level=0
 		fi
 
-		# We will retrieve the command provided as arguments.
-		# We do a special processing in order to get a command as 
-		# similar as the one which was really typed.
-		#
-		# The reason for this is that, for example, if you have a 
-		# script called 'execute.sh' with just the following code:
-		# -----------
-		# #!/bin/bash
-		# eval "$*"
-		# -----------
-		# then running the following command:
-		# $ execute.sh echo "a                      b"
-		# would incorrectly return:
-		# a b
-		# 
-		# With this code we want to avoid this kind of problems.
-
+		# format the command line
 		program_to_test="$(
-			# command itself
-			echo -n "$1"
-			shift
-
-			# arguments
-			while [ "$*" != "" ]
-			do	# put double-quotes in order to separate
-				# each argument
-				echo -n " \"$1\""
-				shift
-			done
+			source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
 		)"
 
 		# check that it seems ok
@@ -250,7 +244,7 @@ case "$1" in
 
 			echo -en "$GREEN"
 			print_separation_line
-			echo -en "$ENDGREEN"
+			echo -en "$ENDCOLOR"
 			exit
 		}
 
@@ -287,6 +281,24 @@ case "$1" in
 
 		;;
 
+	"patch")
+		shift
+
+		# format the command line
+		program_to_patch="$(
+			source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
+		)"
+
+		# check that it seems ok
+		if [ "$program_to_patch" = "" ]
+		then
+			echo "Usage: $this_program patch <program_command_line_which_must_be_patched_regarding_IPv6>" >&2
+			exit
+		fi
+
+		LD_PRELOAD="$patching_library" eval "$program_to_patch"
+		;;
+
 	"binary")
 		shift
 		if [ "$1" != "lookup" -o "$2" = "" ]
@@ -301,6 +313,40 @@ case "$1" in
 			fi
 		fi
 		IPv6_CARE_binary_lookup.sh "$2" "$checking_library"
+		;;
+
+	"system")
+		shift
+		if [ "$1" != "patch" ]
+		then
+			print_usage
+			exit
+		fi
+		if [ "$(whoami)" != "root" ] 
+		then
+			echo "This must be run as root. Aborted."
+		else
+			patch_mode_was="off"	 # init
+			if [ -f "/etc/ld.so.preload" ]
+			then
+				if [ "$(grep "$patching_library" /etc/ld.so.preload | wc -l)" -gt 0 ]
+				then
+					escaped_patching_library=$(echo /usr/lib/libipv6_care_patching.so | sed -e 's/\//\\\//g')
+					updated_content=$(cat /etc/ld.so.preload | sed -e "s/[:space:]*$escaped_patching_library//g")
+					echo "$updated_content" > /etc/ld.so.preload
+					echo -e "System patch-mode was [on]. It is now [${GREEN}off${ENDCOLOR}]."
+					patch_mode_was="on"
+				fi
+			fi
+			if [ "$patch_mode_was" = "off" ]
+			then
+				echo " /usr/lib/libipv6_care_patching.so" >> /etc/ld.so.preload
+				echo -e "System patch-mode was [off]. It is now [${GREEN}on${ENDCOLOR}]."
+				echo -e "${RED}CAUTION${ENDCOLOR}: Patch-mode is activated for all programs you start from now on!"
+				echo -e "         If you restart the operating system, it will be also true for all programs run at startup!"
+				echo -e "         Type '${GREEN}sudo $this_program system patch${ENDCOLOR}' again if you want to disable it."
+			fi
+		fi
 		;;
 
 	*)

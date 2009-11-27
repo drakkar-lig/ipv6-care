@@ -66,8 +66,6 @@ int bind(int socket, const struct sockaddr *address,
 	int result;
 	// TODO record_address(address);
 
-	printf("bind()\n");
-
 	result = original_bind(socket, address, address_len);
 	return result;
 }
@@ -124,7 +122,7 @@ int getaddrinfo(const char *nodename,
 		struct addrinfo **res)
 {
 	int result;
-	struct addrinfo *paddress;
+//	struct addrinfo *paddress;
 
 	result = original_getaddrinfo(nodename, servname, hints, res);
 /*	

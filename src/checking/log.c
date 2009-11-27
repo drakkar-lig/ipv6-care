@@ -27,6 +27,7 @@ Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.1:	Suppress compilation warning on recent compilers
 Etienne DUBLE 	-2.3:	remove " with []" when no arguments are logged
 Etienne DUBLE 	-2.4:	check if the log file could be opened
+Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 
 */
 #define _GNU_SOURCE
@@ -39,6 +40,7 @@ Etienne DUBLE 	-2.4:	check if the log file could be opened
 #include "filesystem.h"
 #include "interpreted_language.h"
 #include "common_colors.h"
+#include "common_fd_tools.h"
 
 extern int log_all;
 extern int interpreted_language;
@@ -113,7 +115,7 @@ void register_info_end()
 		// in the standard output of the program
 		if (verbose_level > 0)
 		{
-			printf(ONLINE_LOG_PREFIX " %s" ONLINE_LOG_SUFFIX "\n", log_function_line);
+			PRINTF(ONLINE_LOG_PREFIX " %s" ONLINE_LOG_SUFFIX "\n", log_function_line);
 		}
 
 		if ((index_last_line != -1) && (memcmp(log_file_content + index_last_line, log_function_line, current_line_size) == 0))

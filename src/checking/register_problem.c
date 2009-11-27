@@ -25,6 +25,7 @@ Last modifications:
 Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.4:	Thread management
+Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 
 */
 #define _GNU_SOURCE
@@ -40,6 +41,7 @@ extern int errno;
 #include "log.h"
 #include "register_problem.h"
 #include "interpreted_language.h"
+#include "common_fd_tools.h"
 
 #define __IPV6_COMPLIANCE_ERRORS_DIR 	"possible_ipv6_related_errors"
 #define __IPV6_COMPLIANCE_WARNINGS_DIR 	"possible_ipv6_related_warnings"
@@ -66,7 +68,7 @@ void write_problem(int is_an_error, char *title, char *content)
 		// try to create the directory
 		if (recursive_mkdir(directory_path_alloc) != 0)
 		{
-			printf("mkdir: %s\n", strerror(errno));
+			PRINTF("mkdir: %s\n", strerror(errno));
 			free(directory_path_alloc);
 			return;
 		}

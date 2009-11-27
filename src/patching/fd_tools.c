@@ -107,6 +107,35 @@ int get_equivalent_address(struct sockaddr *sa, unsigned int sa_size, struct soc
 */
 int create_socket_on_specified_free_fd(int fd, int family, int socktype, int protocol)
 {
+	int result, new_socket;
+
+	result = -1;
+
+	// create the socket
+	new_socket = socket(family, socktype, protocol);
+
+	if (new_socket != -1)
+	{	// if ok check if the file descriptor is the correct one
+		if (new_socket == fd)
+		{
+			result = 0; // ok
+		}
+		else
+		{
+			// if not create a copy of the file descriptor
+			// with the expected integer ...
+			if (dup2(new_socket, fd) != -1)
+			{	
+				result = 0; // ok
+			}
+
+			// ... and close the original file descriptor
+			original_close(new_socket);
+		}
+	}
+	return result;
+
+/*	-- OLD CODE -- 
 	int result, new_socket, num_dummy_sockets, fd_index;
 	int dummy_sockets[MAX_FREE_FILE_DESCRIPTORS];
 
@@ -142,6 +171,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 	}
 
 	return result;
+*/
 }
 
 void get_listening_socket_info(int socket, struct listening_socket_data *data)

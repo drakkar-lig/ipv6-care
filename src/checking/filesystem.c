@@ -29,6 +29,7 @@ Etienne DUBLE 	-2.2:	Improved recognition of the program name
 Etienne DUBLE 	-2.2:	Avoid system() call for the full_command_line file
 Etienne DUBLE 	-2.4:	Thread management
 Etienne DUBLE 	-2.4:	Correct problem regarding directory and file access rights (-> use umask)
+Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 
 */
 #define _GNU_SOURCE
@@ -46,6 +47,7 @@ Etienne DUBLE 	-2.4:	Correct problem regarding directory and file access rights 
 extern int errno;
 
 #include "append_to_string.h"
+#include "common_fd_tools.h"
 #include "common_other_tools.h"
 #include "log.h"
 #include "system_commands.h"
@@ -149,7 +151,7 @@ char *get_or_create_the_directory_related_to_the_program()
 		// create the directory if the directory do not already exists
 		if (recursive_mkdir(directory_path_alloc) != 0)
 		{
-			printf("mkdir: %s\n", strerror(errno));
+			PRINTF("mkdir: %s\n", strerror(errno));
 			free(directory_path_alloc);
 			return NULL;
 		}
@@ -243,7 +245,7 @@ FILE *open_log_file()
 		free(full_filename_alloc);
 		if (file == NULL)
 		{
-			printf("fopen: %s\n", strerror(errno));
+			PRINTF("fopen: %s\n", strerror(errno));
 		}
 	}
 

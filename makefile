@@ -32,7 +32,7 @@
 # Etienne DUBLE 	-3.0:	Introduced patching mode - reorganised the source tree - automatic dependencies
 # 
 
-VERSION=2.4
+VERSION=3.0-alpha1
 
 PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)

@@ -26,6 +26,7 @@ Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Test if interpreted language
 Etienne DUBLE 	-2.2:	Added verbose_level
 Etienne DUBLE 	-2.2:	Reworked init_lib mechanism and implementation
+Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 
 */
 #define _GNU_SOURCE
@@ -37,6 +38,7 @@ Etienne DUBLE 	-2.2:	Reworked init_lib mechanism and implementation
 #include <unistd.h>
 #include <ctype.h>
 
+#include "common_fd_tools.h"
 #include "common_other_tools.h"
 #include "stack_tools.h"
 #include "append_to_string.h"
@@ -66,6 +68,8 @@ void init_lib()
 	char c[2];
 	char *path_of_program_alloc = NULL;
 	char *substring, *char_pointer;
+
+	save_tty_fd();
 
 	// let's get the full command line of the program for future reference
 	c[1] = '\0';

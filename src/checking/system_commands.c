@@ -24,6 +24,7 @@ Nov 25, 2008.
 Last modifications: 
 Etienne DUBLE 	-2.2:	Creation
 Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
+Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 
 */
 #define _GNU_SOURCE
@@ -32,6 +33,7 @@ Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
 
 #include "append_to_string.h"
 #include "common_colors.h"
+#include "common_fd_tools.h"
 
 #define FAILURE_DIAGNOSIS_PART1 "** IPv6 CARE failed to"
 #define FAILURE_DIAGNOSIS_PART2 "because"
@@ -57,7 +59,7 @@ void set_ld_preload()
 
 void write_failure_diagnosis(char *description, char *reason)
 {
-	printf(	RED 	"** IPv6 CARE failed to %s because %s.\n"
+	PRINTF(	RED 	"** IPv6 CARE failed to %s because %s.\n"
 		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this.\n" 
 		ENDCOLOR, 
 		description, reason);
