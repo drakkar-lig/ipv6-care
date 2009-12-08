@@ -27,7 +27,10 @@ Etienne DUBLE 	-3.0:	Creation
 */
 #ifndef __FD_TOOLS_H__
 #define __FD_TOOLS_H__
+
+#define _GNU_SOURCE
 #include <sys/select.h>
+#include <poll.h>
 
 #include "created_sockets.h"
 
@@ -46,6 +49,8 @@ int wait_on_two_sockets(int socket1, int socket2);
 int manage_socket_access_on_fd(enum list_of_fd_access_types access_type, int fd);
 void close_sockets_related_to_fd(int fd);
 void manage_socket_accesses_on_fdset(int *nfds, fd_set *fds, fd_set *final_fds);
+void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct pollfd *fds, struct pollfd **final_fds);
 void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds);
+void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct pollfd *initial_fds, struct pollfd *final_fds);
 
 #endif

@@ -26,6 +26,7 @@ Etienne DUBLE 	-3.0:	Creation
 
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <netdb.h>
 
@@ -178,6 +179,47 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		record_sa_address_name_match((struct sockaddr *)sa, node);
 	}
 */	return result;
+}
+
+int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+	struct pollfd *final_fds;
+	int final_nfds, result;
+
+	// indicate to manage_socket_accesses_on_pollfd_table that no allocation has been done yet
+	final_fds = NULL;
+
+	manage_socket_accesses_on_pollfd_table(nfds, &final_nfds, fds, &final_fds);
+
+	result = original_poll(final_fds, final_nfds, timeout);
+
+	remap_changes_to_initial_pollfd_table(nfds, final_nfds, fds, final_fds);
+
+	// free memory
+	final_fds = realloc(final_fds, 0);
+
+	return result;
+}
+
+int ppoll(struct pollfd *fds, nfds_t nfds,
+               const struct timespec *timeout, const sigset_t *sigmask)
+{
+	struct pollfd *final_fds;
+	int final_nfds, result;
+
+	// indicate to manage_socket_accesses_on_pollfd_table that no allocation has been done yet
+	final_fds = NULL;
+
+	manage_socket_accesses_on_pollfd_table(nfds, &final_nfds, fds, &final_fds);
+
+	result = original_ppoll(final_fds, final_nfds, timeout, sigmask);
+
+	remap_changes_to_initial_pollfd_table(nfds, final_nfds, fds, final_fds);
+
+	// free memory
+	final_fds = realloc(final_fds, 0);
+
+	return result;
 }
 
 int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,

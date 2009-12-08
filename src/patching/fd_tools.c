@@ -29,6 +29,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "fd_tools.h"
 #include "original_functions.h"
@@ -400,6 +401,84 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 			if (!FD_ISSET(fd, &resulting_initial_fds) && FD_ISSET(fd, initial_fds))
 			{
 				FD_CLR(fd, initial_fds);
+			}
+		}
+	}
+}
+
+void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct pollfd *fds, struct pollfd **final_fds)
+{
+	int allocated, new_nfds, fd, index;
+	int new_socket_created;
+	int is_a_listening_socket;
+	unsigned int opt_len;
+
+	allocated = nfds+2;
+	*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
+	memcpy(*final_fds, fds, nfds*sizeof(struct pollfd));
+	new_nfds = nfds;
+
+	for (index = 0; index < nfds; index++)
+	{
+		fd = fds[index].fd;
+		opt_len = sizeof(is_a_listening_socket);
+		if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &is_a_listening_socket, &opt_len) == 0)
+		{
+			if (is_a_listening_socket == 1)
+			{
+				new_socket_created = get_additional_listening_socket_if_needed(fd);
+				if (new_socket_created != -1)
+				{	// a new socket was created, add it in the final_fds
+					
+					// enlarge the table if needed
+					if (new_nfds == allocated)
+					{
+						allocated = 2*allocated;
+						*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
+					}
+
+					// copy the info and set the fd as the new socket
+					memcpy(&(*final_fds)[new_nfds], &fds[index], sizeof(struct pollfd));
+					(*final_fds)[new_nfds].fd = new_socket_created;
+					new_nfds ++;
+				}
+			}
+		}
+	}
+
+	*final_nfds = new_nfds;
+}
+
+void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct pollfd *initial_fds, struct pollfd *final_fds)
+{
+	int index, index2, fd, initial_socket;
+
+	// start by copying back the nfds first elements
+	memcpy(initial_fds, final_fds, nfds*sizeof(struct pollfd));
+
+	// now manage the added elements
+	for (index = nfds; index < final_nfds; index++)
+	{
+		if (final_fds[index].revents > 0) // if something happened there
+		{
+			fd = final_fds[index].fd;
+			initial_socket = find_initial_socket_for_created_socket(fd);
+			if (initial_socket == -1)
+			{	// should not occur since we started the loop at nfds
+			}
+			else
+			{	// fd was created by IPv6 CARE, set the flags on the initial socket
+
+				// first, find where is this initial socket in the table
+				for (index2 = 0; index2 < nfds; index2++)
+				{
+					if (final_fds[index2].fd == initial_socket)
+					{
+						// then, OR its flags
+						initial_fds[index2].revents |= final_fds[index].revents;
+						break;
+					}
+				}
 			}
 		}
 	}

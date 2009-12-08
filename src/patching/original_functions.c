@@ -170,6 +170,31 @@ int original_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 	return result;
 }
 
+int original_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+	int result;
+
+	__CALL_ORIGINAL_FUNCTION(	FUNCTION_NAME(poll),
+					ARGS(fds, nfds, timeout),
+					RETURN_VALUE_IF_FAILURE(-1),
+					RESULT_PTR(&result));
+
+	return result;
+}
+
+int original_ppoll(struct pollfd *fds, nfds_t nfds,
+               const struct timespec *timeout, const sigset_t *sigmask)
+{
+	int result;
+
+	__CALL_ORIGINAL_FUNCTION(	FUNCTION_NAME(ppoll),
+					ARGS(fds, nfds, timeout, sigmask),
+					RETURN_VALUE_IF_FAILURE(-1),
+					RESULT_PTR(&result));
+
+	return result;
+}
+
 int original_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {

@@ -31,13 +31,16 @@ Etienne DUBLE 	-2.3:	add logging of freeaddrinfo()
 Etienne DUBLE 	-2.3:	only log operations on sockets AF_INET and AF_INET6
 Etienne DUBLE 	-2.3:	corrected gethostbyaddr()
 Etienne DUBLE 	-2.4:	included common_networking_tools.h
+Etienne DUBLE 	-2.5:	added poll() and ppoll()
 
 */
+#define _GNU_SOURCE
 #include <netdb.h>
 #include <sys/socket.h>
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <poll.h>
 
 #include "macros.h"
 #include "problems.h"
@@ -46,6 +49,7 @@ Etienne DUBLE 	-2.4:	included common_networking_tools.h
 #include "fd_set_tools.h"
 #include "stack_tools.h"
 #include "common_networking_tools.h"
+
 
 #define INTERPRETER_MAX_SIZE	32
 #define IP_MAX_SIZE             64
@@ -387,6 +391,43 @@ int listen(int socket, int backlog)
 	{
 		__REGISTER_INFO_INT("socket", socket);
 		__REGISTER_INFO_INT("backlog", backlog);
+	}
+	else
+	{
+		do_not_log_this_function();
+	}
+
+	__END_FUNCTION_CALL_ANALYSIS
+}
+
+int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(poll),
+					ARGS(fds, nfds, timeout),
+					RETURN_VALUE_IF_FAILURE(-1))
+
+	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
+	{
+		register_pollfd_table_parameters(fds, nfds);
+	}
+	else
+	{
+		do_not_log_this_function();
+	}
+
+	__END_FUNCTION_CALL_ANALYSIS
+}
+
+int ppoll(struct pollfd *fds, nfds_t nfds,
+               const struct timespec *timeout, const sigset_t *sigmask)
+{
+	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(ppoll),
+					ARGS(fds, nfds, timeout, sigmask),
+					RETURN_VALUE_IF_FAILURE(-1))
+
+	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
+	{
+		register_pollfd_table_parameters(fds, nfds);
 	}
 	else
 	{

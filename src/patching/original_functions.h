@@ -48,6 +48,9 @@ int original_gethostbyname_r(const char *name,
 int original_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		char *node, socklen_t nodelen, char *service,
 		socklen_t servicelen, unsigned int flags);
+int original_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+int original_ppoll(struct pollfd *fds, nfds_t nfds,
+               const struct timespec *timeout, const sigset_t *sigmask);
 int original_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	      const struct timespec *timeout, const sigset_t *sigmask);
 ssize_t original_read(int fd, void *buf, size_t count);
