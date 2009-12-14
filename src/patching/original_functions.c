@@ -35,6 +35,14 @@ Etienne DUBLE 	-3.0:	Creation
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <poll.h>
+
+#if !defined(__GLIBC__) || (__GLIBC__ < 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ < 4))
+// The following function was introduced in glibc 2.4
+// We define it manually for compatibility with older systems
+int ppoll(struct pollfd *fds, nfds_t nfds,
+               const struct timespec *timeout, const sigset_t *sigmask);
+#endif
 
 #include "macros.h"
 #include "fd_tools.h"

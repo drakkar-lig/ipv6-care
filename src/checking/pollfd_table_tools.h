@@ -22,14 +22,11 @@ Nov 25, 2008.
 ---------------------------------------------------------------------
 
 Last modifications: 
-Etienne DUBLE 	-1.0:	Creation
-Etienne DUBLE 	-2.2:	Added test_if_fd_is_a_socket
-Etienne DUBLE 	-2.3:	Removed test_if_fd_is_a_socket
-Etienne DUBLE 	-2.3:	Changed test_if_fd_sets_contain_sockets to test_if_fd_sets_contain_network_sockets
+Etienne DUBLE 	-2.5:	Creation
 
 */
-#ifndef __FD_SET_TOOLS_H__
-#define __FD_SET_TOOLS_H__
-int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
-void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
+#ifndef __POLLFD_TABLE_TOOLS_H__
+#define __POLLFD_TABLE_TOOLS_H__
+int test_if_pollfd_table_contain_network_sockets(struct pollfd *fds, nfds_t nfds);
+void register_pollfd_table_parameters(struct pollfd *fds, nfds_t nfds);
 #endif

@@ -47,6 +47,7 @@ Etienne DUBLE 	-2.5:	added poll() and ppoll()
 #include "register_problem.h"
 #include "networking_tools.h"
 #include "fd_set_tools.h"
+#include "pollfd_table_tools.h"
 #include "stack_tools.h"
 #include "common_networking_tools.h"
 
