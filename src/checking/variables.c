@@ -26,12 +26,12 @@ Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Added interpreted_language
 Etienne DUBLE 	-2.2:	Added verbose_level, program_command_line, program_basename, ld_preload_value, interpreter_name
 Etienne DUBLE 	-2.4:	Thread management
+Etienne DUBLE 	-2.5:	Removed variable log_all, log_needed
 
 */
 #include <stdio.h>
 
 // global variables
-int log_all = 0;
 int max_function_depth_reported = 0;
 int interpreted_language = 0;
 int verbose_level = 0;
@@ -42,7 +42,6 @@ char *interpreter_name = NULL;
 
 // per-thread variables
 __thread int function_depth=0;
-__thread int log_needed = 0;
 __thread char *log_file_content = NULL;
 __thread char *log_function_line = NULL;
 __thread int index_last_line = -1;

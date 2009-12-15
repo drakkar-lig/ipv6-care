@@ -30,6 +30,7 @@
 # Etienne DUBLE 	-2.1:	Added README and LICENSE files
 # Etienne DUBLE 	-2.3:	Added bash completion
 # Etienne DUBLE 	-3.0:	Introduced patching mode - reorganised the source tree - automatic dependencies
+# Etienne DUBLE 	-2.5:	Added man page
 # 
 
 VERSION=3.0-alpha2
@@ -66,6 +67,7 @@ install:
 	@cp -f scripts/IPv6_CARE_*.sh /usr/bin/
 	@cp -f out/libipv6_care_checking.so /usr/lib/
 	@cp -f out/libipv6_care_patching.so /usr/lib/
+	@cp -f man/ipv6_care.8.gz /usr/share/man/man8/
 	@if [ -d /etc/bash_completion.d ] ; \
 	 then 	cp scripts/complete.sh /etc/bash_completion.d/ipv6_care ; \
 	 	echo "bash completion will only be updated when you start a new bash session." ; \
@@ -77,6 +79,7 @@ uninstall:
 	rm -f /usr/bin/IPv6_CARE_*.sh
 	rm -f /usr/lib/libipv6_care_checking.so
 	rm -f /usr/lib/libipv6_care_patching.so
+	rm -f /usr/share/man/man8/ipv6_care.8.gz
 	rm -f /etc/bash_completion.d/ipv6_care
 
 define package_creation

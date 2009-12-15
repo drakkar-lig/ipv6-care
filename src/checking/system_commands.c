@@ -25,6 +25,7 @@ Last modifications:
 Etienne DUBLE 	-2.2:	Creation
 Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
 Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
+Etienne DUBLE 	-2.5:	ENDCOLOR before \n
 
 */
 #define _GNU_SOURCE
@@ -60,8 +61,9 @@ void set_ld_preload()
 void write_failure_diagnosis(char *description, char *reason)
 {
 	PRINTF(	RED 	"** IPv6 CARE failed to %s because %s.\n"
-		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this.\n" 
-		ENDCOLOR, 
+		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this." 
+		ENDCOLOR
+			"\n", 
 		description, reason);
 }
 

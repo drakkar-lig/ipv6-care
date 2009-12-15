@@ -30,6 +30,7 @@ Etienne DUBLE 	-2.2:	Avoid system() call for the full_command_line file
 Etienne DUBLE 	-2.4:	Thread management
 Etienne DUBLE 	-2.4:	Correct problem regarding directory and file access rights (-> use umask)
 Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
+Etienne DUBLE 	-2.5:	Handling of wrong permissions of directories
 
 */
 #define _GNU_SOURCE
@@ -49,6 +50,7 @@ extern int errno;
 #include "append_to_string.h"
 #include "common_fd_tools.h"
 #include "common_other_tools.h"
+#include "common_colors.h"
 #include "log.h"
 #include "system_commands.h"
 
@@ -102,6 +104,11 @@ int recursive_mkdir(char *dir)
 			result = 0;
 		}
 
+		if ((result != 0)&&(errno != ENOENT))
+		{
+			PRINTF( RED "** IPv6 CARE failed to create %s (%s)." ENDCOLOR "\n", dir, strerror(errno));
+		}
+
 		// if first try failed with error "no such file or directory"
 		if ((result != 0)&&(errno == ENOENT))
 		{
@@ -130,7 +137,7 @@ int recursive_mkdir(char *dir)
 char *get_or_create_the_directory_related_to_the_program()
 {
 	static int directory_created = 0;
-	static char *directory_path_alloc;
+	static char *directory_path_alloc = NULL;
 
 	char *symlink_dir_path_alloc, *symlink_path_alloc, 
 			*full_command_line_path_alloc;
@@ -150,8 +157,7 @@ char *get_or_create_the_directory_related_to_the_program()
 
 		// create the directory if the directory do not already exists
 		if (recursive_mkdir(directory_path_alloc) != 0)
-		{
-			PRINTF("mkdir: %s\n", strerror(errno));
+		{	// error already reported in recursive_mkdir()
 			free(directory_path_alloc);
 			return NULL;
 		}
@@ -231,7 +237,7 @@ char *get_or_create_the_directory_related_to_the_thread()
 // this function opens the log file and returns its file descriptor
 FILE *open_log_file()
 {
-	FILE *file;
+	FILE *file = NULL;
 	char *full_filename_alloc;
 	char *directory_path;
 
@@ -245,7 +251,7 @@ FILE *open_log_file()
 		free(full_filename_alloc);
 		if (file == NULL)
 		{
-			PRINTF("fopen: %s\n", strerror(errno));
+			PRINTF( RED "** IPv6 CARE failed to create or open %s (%s)." ENDCOLOR "\n", full_filename_alloc, strerror(errno));
 		}
 	}
 

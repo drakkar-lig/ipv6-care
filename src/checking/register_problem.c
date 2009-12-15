@@ -26,6 +26,7 @@ Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.4:	Thread management
 Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
+Etienne DUBLE 	-2.5:	Removed log_needed
 
 */
 #define _GNU_SOURCE
@@ -48,7 +49,6 @@ extern int errno;
 #define __PROBLEM_DESCRIPTION_FILENAME 	"problem_description"
 
 extern int interpreted_language;
-extern __thread int log_needed;
 
 // this function writes an IPv6 compliance warning, with its description and
 // the current process stack, and writes the log
@@ -67,8 +67,7 @@ void write_problem(int is_an_error, char *title, char *content)
 	
 		// try to create the directory
 		if (recursive_mkdir(directory_path_alloc) != 0)
-		{
-			PRINTF("mkdir: %s\n", strerror(errno));
+		{	// error already reported in recursive_mkdir()
 			free(directory_path_alloc);
 			return;
 		}
@@ -95,7 +94,6 @@ void write_problem(int is_an_error, char *title, char *content)
 			// close
 			fclose(file);
 
-			log_needed = 1;
 			log_if_needed();
 		}
 	}

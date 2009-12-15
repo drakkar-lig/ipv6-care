@@ -28,6 +28,7 @@ Etienne DUBLE 	-2.1:	Suppress compilation warning on recent compilers
 Etienne DUBLE 	-2.3:	remove " with []" when no arguments are logged
 Etienne DUBLE 	-2.4:	check if the log file could be opened
 Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
+Etienne DUBLE 	-2.5:	Removed variable log_all, log_needed
 
 */
 #define _GNU_SOURCE
@@ -42,12 +43,10 @@ Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 #include "common_colors.h"
 #include "common_fd_tools.h"
 
-extern int log_all;
 extern int interpreted_language;
 extern int verbose_level;
 
 extern __thread int function_depth;
-extern __thread int log_needed;
 extern __thread char *log_file_content;
 extern __thread char *log_function_line;
 extern __thread int index_last_line;
@@ -60,8 +59,7 @@ void log_if_needed()
 {
 	FILE* file;
 
-	if (	((log_needed == 1) || (log_all == 1) || (verbose_level > 0)) &&
-		(log_file_content != NULL))
+	if (log_file_content != NULL)
 	{
 		file = open_log_file();
 		if (file != NULL)

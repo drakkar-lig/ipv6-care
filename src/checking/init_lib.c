@@ -27,6 +27,7 @@ Etienne DUBLE 	-2.0:	Test if interpreted language
 Etienne DUBLE 	-2.2:	Added verbose_level
 Etienne DUBLE 	-2.2:	Reworked init_lib mechanism and implementation
 Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
+Etienne DUBLE 	-2.5:	Removed variable log_all
 
 */
 #define _GNU_SOURCE
@@ -45,7 +46,6 @@ Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 #include "system_commands.h"
 #include "function_state.h"
 
-extern int log_all;
 extern int max_function_depth_reported;
 extern int interpreted_language;
 extern int verbose_level;
@@ -144,12 +144,6 @@ void init_lib()
 	}
 	
 	// Environment variables
-	if (	(getenv("IPV6_LOG_ALL") != NULL) && 
-		(strcmp(getenv("IPV6_LOG_ALL"), "1") == 0))
-	{
-		log_all = 1;
-	}
-
 	if (getenv("IPV6_MAX_FUNCTION_DEPTH") != NULL)
 	{
 		sscanf(getenv("IPV6_MAX_FUNCTION_DEPTH"), "%d", &max_function_depth_reported);

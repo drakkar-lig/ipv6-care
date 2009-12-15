@@ -32,6 +32,8 @@
 # Etienne DUBLE 	-2.4:	Reorganised the source tree
 # Etienne DUBLE 	-3.0:	Introduced patching mode
 # Etienne DUBLE 	-3.0:	Introduced system patch
+# Etienne DUBLE 	-2.5:	Manage IPV6_CARE_DEBUG_TOOL env variable
+# Etienne DUBLE 	-2.5:	Removed option -o
 # 
 
 # update the COLUMNS variable
@@ -87,7 +89,7 @@ print_usage()
 	echo "Usage: system set up mode:" >&2
 	echo "       sudo $this_program system patch                         # -> patch all programs" >&2
 	echo "Others:"	>&2
-	echo "       $this_program sh[ell] [-o] [-v]                         # -> shell" >&2
+	echo "       $this_program sh[ell] [-v]                         # -> shell" >&2
 	echo "       $this_program binary lookup <path_to_binary>            # -> self-diagnosis" >&2
 	echo >&2
 	echo "Examples:" >&2
@@ -96,7 +98,6 @@ print_usage()
 	echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
 	echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
 	echo "$this_program shell 			# start IPv6 CARE shell - log all network-related programs" >&2
-	echo "$this_program shell -o 			# start IPv6 CARE shell - only log non-IPv6-compliant programs" >&2
 	echo "$this_program binary lookup /bin/nc 	# Verify that IPv6 CARE can work correctly with the binary 'nc'" >&2
 	echo "sudo $this_program system patch	 	# Toggle patch-mode for all programs started on this system" >&2
 	echo >&2
@@ -143,21 +144,7 @@ ipv6_care_prev_number_of_directories=$(ipv6_care_get_diagnosis_directories | wc 
 
 case "$1" in
 	"sh"|"shell")
-		echo -e "$GREEN"
-		echo "IPv6 compliance checking is now enabled for all programs started in this bash session."
-		echo "Diagnosis will be reported in '/tmp/ipv6_diagnosis'."
-
 		shift
-
-		if [ "$1" = "-o" ]
-		then
-			echo "Since you specified option '-o', only programs with IPv6 compliance problems will be logged."
-			export IPV6_LOG_ALL=0
-			shift
-		else
-			echo "All network-related programs will be logged."
-			export IPV6_LOG_ALL=1
-		fi
 
 		case "$1" in
 			"-v")
@@ -168,12 +155,14 @@ case "$1" in
 				export IPV6_VERBOSE_LEVEL=0
 				;;
 			*)
-				echo "Usage: $this_program sh[ell] [-o] [-v]" >&2
-				echo "Use '-o' if you want only programs with IPv6 compliance problems to be logged." >&2
-				echo "Otherwise all network-related programs will be logged." >&2
+				echo "Usage: $this_program sh[ell] [-v]" >&2
 				echo "Use '-v' if you want the functions calls displayed on the standard output." >&2
 				exit
 		esac
+
+		echo -e "$GREEN"
+		echo "IPv6 compliance checking is now enabled for all programs started in this bash session."
+		echo "Diagnosis will be reported in '/tmp/ipv6_diagnosis'."
 		echo -e "$ENDCOLOR"
 
 		export LD_PRELOAD="$checking_library"
@@ -259,7 +248,8 @@ case "$1" in
 		trap end_of_script EXIT
 
 		# run the test
-		IPV6_VERBOSE_LEVEL=$verbose_level IPV6_LOG_ALL=1 LD_PRELOAD="$checking_library" eval "$program_to_test"
+		IPV6_VERBOSE_LEVEL=$verbose_level LD_PRELOAD="$checking_library" \
+						eval "$IPV6_CARE_DEBUG_TOOL $program_to_test"
 		# done.
 
 		# check if some subprocesses are still running

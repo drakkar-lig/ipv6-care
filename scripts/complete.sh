@@ -27,6 +27,7 @@
 # Etienne DUBLE 	-2.4:	Introduced option binary lookup
 # Etienne DUBLE 	-3.0:	Introduced option patch
 # Etienne DUBLE 	-3.0:	Introduced option system patch
+# Etienne DUBLE 	-2.5:	Removed variable log_all / option -o
 
 # features supported by bash 2.05 and higher
 if [ ${BASH_VERSINFO[0]} -eq 2 ] && [[ ${BASH_VERSINFO[1]} > 04 ]] ||
@@ -54,11 +55,6 @@ remove_prefix()
 	if [ "${COMP_WORDS[num_removed_words]}" = "patch" -a $COMP_CWORD -gt $num_removed_words ]
 	then
 		COMP_LINE="${COMP_LINE#lookup[[:space:]]*}"
-		num_removed_words=$((num_removed_words +1))
-	fi
-	if [ "${COMP_WORDS[num_removed_words]}" = "-o" -a $COMP_CWORD -gt $num_removed_words ]
-	then
-		COMP_LINE="${COMP_LINE#-o[[:space:]]*}"
 		num_removed_words=$((num_removed_words +1))
 	fi
 	if [ "${COMP_WORDS[num_removed_words]}" = "-v" -a $COMP_CWORD -gt $num_removed_words ]
@@ -161,30 +157,15 @@ complete_ipv6_care()
 				#echo "COMP_CWORD=$COMP_CWORD"
 				#echo "cur=$cur"
 				#echo
-				if [ "${COMP_WORDS[2]}" = "-o" -a "${COMP_WORDS[3]}" = "-v" -a $COMP_CWORD -gt 3 ] 
+				if [ "${COMP_WORDS[2]}" = "-v" -a $COMP_CWORD -gt 2 ] 
 				then
 					COMPREPLY=()
 				else
-					if [ "${COMP_WORDS[2]}" = "-o" -a $COMP_CWORD -gt 2 ] 
+					if [ $COMP_CWORD -gt 2 ]
 					then
-						if [ $COMP_CWORD -gt 3 ]
-						then
-							COMPREPLY=()
-						else
-							COMPREPLY=( $(compgen -W "-v" -- "$cur") );
-						fi
+						COMPREPLY=()
 					else
-						if [ "${COMP_WORDS[2]}" = "-v" -a $COMP_CWORD -gt 2 ] 
-						then
-							COMPREPLY=()
-						else
-							if [ $COMP_CWORD -gt 2 ]
-							then
-								COMPREPLY=()
-							else
-								COMPREPLY=( $(compgen -W "-o -v" -- "$cur") );
-							fi
-						fi
+						COMPREPLY=( $(compgen -W "-v" -- "$cur") );
 					fi
 				fi
 				;;

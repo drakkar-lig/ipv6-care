@@ -23,6 +23,7 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-2.5:	Creation
+Etienne DUBLE 	-2.5:	Improved robustness
 
 */
 #include <unistd.h>
@@ -40,11 +41,23 @@ extern FILE *tty_fd;
 
 void save_tty_fd()
 {
+	char *tty_name;
+	int done_ok = 0;
+
 	if (isatty(1))
 	{
-		tty_fd = fdopen(open(ttyname(1), O_WRONLY), "w");
+		tty_name = ttyname(1);
+		if (tty_name != NULL)
+		{
+			tty_fd = fopen(ttyname(1), "w+");
+			if (tty_fd != NULL)
+			{
+				done_ok = 1;
+			}
+		} 
 	}
-	else
+
+	if (done_ok == 0)
 	{
 		tty_fd = stdout;
 	}
