@@ -32,9 +32,9 @@ Etienne DUBLE 	-2.3:	only log operations on sockets AF_INET and AF_INET6
 Etienne DUBLE 	-2.3:	corrected gethostbyaddr()
 Etienne DUBLE 	-2.4:	included common_networking_tools.h
 Etienne DUBLE 	-2.5:	added poll() and ppoll()
+Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 
 */
-#define _GNU_SOURCE
 #include <netdb.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -63,7 +63,7 @@ extern char *interpreter_name;
  * 
  * <return_type> <function>(<args>)
  * {
- * 	__START_FUNCTION_CALL_ANALYSIS( FUNCTION_NAME(<function>),
+ * 	__START_FUNCTION_CALL_ANALYSIS(<function>),
  *                                      ARGS(<args_with_no_type>),
  *                                      RETURN_VALUE_IF_FAILURE(<value>))
  *        
@@ -86,9 +86,7 @@ extern char *interpreter_name;
 int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(accept),
-					ARGS(socket, address, address_len),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(accept(socket, address, address_len))
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
@@ -107,9 +105,7 @@ int bind(int socket, const struct sockaddr *address,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(bind),
-					ARGS(socket, address, address_len),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(bind(socket, address, address_len))
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
@@ -128,9 +124,7 @@ int bind(int socket, const struct sockaddr *address,
 
 int close(int fd)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(close),
-					ARGS(fd),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(close(fd))
 
 	if (test_if_fd_is_a_network_socket(fd) == 1)
 	{
@@ -149,9 +143,7 @@ int connect(int socket, const struct sockaddr *address,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(connect),
-					ARGS(socket, address, address_len),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(connect(socket, address, address_len))
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
@@ -170,8 +162,7 @@ int connect(int socket, const struct sockaddr *address,
 
 void freeaddrinfo(struct addrinfo *res)
 {
-	__START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(  FUNCTION_NAME(freeaddrinfo),
-							ARGS(res))
+	__START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(freeaddrinfo(res))
 
 	// no interesting arguments to be logged, only the function itself will be logged
 
@@ -184,9 +175,7 @@ int getaddrinfo(const char *nodename,
 		struct addrinfo **res)
 {
 	int ai_family, ai_socktype, ai_flags;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(getaddrinfo),
-					ARGS(nodename, servname, hints, res),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(getaddrinfo(nodename, servname, hints, res))
 
 	if (hints == NULL)
 	{	
@@ -240,9 +229,7 @@ int getaddrinfo(const char *nodename,
 struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
 	char ip[IP_MAX_SIZE];
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(gethostbyaddr),
-					ARGS(addr, len, type),
-					RETURN_VALUE_IF_FAILURE(NULL))
+	__START_FUNCTION_CALL_ANALYSIS(gethostbyaddr(addr, len, type))
 
 	inet_ntop(type, addr, ip, IP_MAX_SIZE);
 	__REGISTER_INFO_CHARS("addr.ip", ip);
@@ -251,11 +238,23 @@ struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 	__END_FUNCTION_CALL_ANALYSIS
 }
 
+int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
+			struct hostent *ret, char *buf, size_t buflen,
+			struct hostent **result, int *h_errnop)
+{
+	char ip[IP_MAX_SIZE];
+	__START_FUNCTION_CALL_ANALYSIS(gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop))
+
+	inet_ntop(type, addr, ip, IP_MAX_SIZE);
+	__REGISTER_INFO_CHARS("addr.ip", ip);
+	write_problem(WARNING, GETHOSTBYADDR_R_PROBLEM, GETHOSTBYADDR_R_PROBLEM_DESCRIPTION);
+
+	__END_FUNCTION_CALL_ANALYSIS
+}
+
 struct hostent *gethostbyname(const char *name)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(gethostbyname),
-					ARGS(name),
-					RETURN_VALUE_IF_FAILURE(NULL))
+	__START_FUNCTION_CALL_ANALYSIS(gethostbyname(name))
 
 	__REGISTER_INFO_CHARS("name", name);
 	write_problem(ERROR, GETHOSTBYNAME_PROBLEM, GETHOSTBYNAME_PROBLEM_DESCRIPTION);
@@ -267,9 +266,7 @@ int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(gethostbyname_r),
-					ARGS(name, ret, buf, buflen, result, h_errnop),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(gethostbyname_r(name, ret, buf, buflen, result, h_errnop))
 
 	__REGISTER_INFO_CHARS("name", name);
 
@@ -291,9 +288,7 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(getnameinfo),
-					ARGS(sa, salen, node, nodelen, service, servicelen, flags),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(getnameinfo(sa, salen, node, nodelen, service, servicelen, flags))
 
 	if (sa != NULL)		// this would be an error in the calling program
 	{
@@ -305,11 +300,27 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 	__END_FUNCTION_CALL_ANALYSIS
 }
 
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	__START_FUNCTION_CALL_ANALYSIS(getpeername(sockfd, addr, addrlen))
+
+	__REGISTER_INFO_INT("sockfd", sockfd);
+
+	__END_FUNCTION_CALL_ANALYSIS
+}
+
+int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	__START_FUNCTION_CALL_ANALYSIS(getsockname(sockfd, addr, addrlen))
+
+	__REGISTER_INFO_INT("sockfd", sockfd);
+
+	__END_FUNCTION_CALL_ANALYSIS
+}
+
 in_addr_t inet_addr(const char *cp)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(inet_addr),
-					ARGS(cp),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(inet_addr(cp))
 
 	__REGISTER_INFO_CHARS("cp", cp);
 	write_problem(ERROR, INET_ADDR_PROBLEM, INET_ADDR_PROBLEM_DESCRIPTION);
@@ -319,9 +330,7 @@ in_addr_t inet_addr(const char *cp)
 
 int inet_aton(const char *cp, struct in_addr *inp)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(inet_aton),
-					ARGS(cp, inp),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(inet_aton(cp, inp))
 
 	__REGISTER_INFO_CHARS("cp", cp);
 	write_problem(ERROR, INET_ATON_PROBLEM, INET_ATON_PROBLEM_DESCRIPTION);
@@ -335,9 +344,7 @@ char *inet_ntoa(struct in_addr in)
 	int port;
 	struct sockaddr_storage sas;
 	struct sockaddr_in *sa_in = (struct sockaddr_in *)&sas;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(inet_ntoa),
-					ARGS(in),
-					RETURN_VALUE_IF_FAILURE(NULL))
+	__START_FUNCTION_CALL_ANALYSIS(inet_ntoa(in))
 
 	// retrieve the ip for the log
 	memset(&sas, 0, sizeof(struct sockaddr_storage));
@@ -356,9 +363,7 @@ const char *inet_ntop(int af, const void *src,
               char *dst, socklen_t size)
 {
 	char ip[IP_MAX_SIZE];
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(inet_ntop),
-					ARGS(af, src, dst, size),
-					RETURN_VALUE_IF_FAILURE(NULL))
+	__START_FUNCTION_CALL_ANALYSIS(inet_ntop(af, src, dst, size))
 
 	// retrieve the ip for the log
 	// (due to the implementation of __START_FUNCTION_CALL_ANALYSIS
@@ -372,9 +377,7 @@ const char *inet_ntop(int af, const void *src,
 
 int inet_pton(int af, const char *src, void *dst)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(inet_pton),
-					ARGS(af, src, dst),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(inet_pton(af, src, dst))
 
 	__REGISTER_INFO_CHARS("src", src);
 	write_problem(WARNING, INET_PTON_PROBLEM, INET_PTON_PROBLEM_DESCRIPTION);
@@ -384,9 +387,7 @@ int inet_pton(int af, const char *src, void *dst)
 
 int listen(int socket, int backlog)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(listen),
-					ARGS(socket, backlog),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(listen(socket, backlog))
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
@@ -403,9 +404,7 @@ int listen(int socket, int backlog)
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(poll),
-					ARGS(fds, nfds, timeout),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(poll(fds, nfds, timeout))
 
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
@@ -422,9 +421,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 int ppoll(struct pollfd *fds, nfds_t nfds,
                const struct timespec *timeout, const sigset_t *sigmask)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(ppoll),
-					ARGS(fds, nfds, timeout, sigmask),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(ppoll(fds, nfds, timeout, sigmask))
 
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
@@ -441,9 +438,7 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
 int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(pselect),
-					ARGS(nfds, readfds, writefds, errorfds, timeout, sigmask),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(pselect(nfds, readfds, writefds, errorfds, timeout, sigmask))
 
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
@@ -460,9 +455,7 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(select),
-					ARGS(nfds, readfds, writefds, errorfds, timeout),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(select(nfds, readfds, writefds, errorfds, timeout))
 
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
@@ -480,9 +473,7 @@ int setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len)
 {
 	int value;
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(setsockopt),
-					ARGS(socket, level, option_name, option_value, option_len),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(setsockopt(socket, level, option_name, option_value, option_len))
 
 	value = *(int*)option_value;
 
@@ -502,9 +493,7 @@ int setsockopt(int socket, int level, int option_name,
 
 int socket(int domain, int type, int protocol)
 {
-	__START_FUNCTION_CALL_ANALYSIS(	FUNCTION_NAME(socket),
-					ARGS(domain, type, protocol),
-					RETURN_VALUE_IF_FAILURE(-1))
+	__START_FUNCTION_CALL_ANALYSIS(socket(domain, type, protocol))
 
 	if ((domain == AF_INET)||(domain == AF_INET6))
 	{

@@ -25,6 +25,7 @@ Last modifications:
 Etienne DUBLE 	-1.0:	Creation
 Etienne DUBLE 	-2.0:	Improvement of the messages
 Etienne DUBLE 	-2.1:	Grammar
+Etienne DUBLE 	-2.5:	Added gethostbyaddr_r()
 
 */
 #ifndef __PROBLEMS_H__
@@ -91,6 +92,11 @@ Etienne DUBLE 	-2.1:	Grammar
 // gethostbyaddr
 #define GETHOSTBYADDR_PROBLEM				"gethostbyaddr"
 #define GETHOSTBYADDR_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( THIS_PROGRAM_USES_AF_DEPENDENT("gethostbyaddr") )      \
+							SOLUTION( USE_GETADDRINFO_AF_UNSPEC_AI_NUMERICHOST )
+
+// gethostbyaddr_r
+#define GETHOSTBYADDR_R_PROBLEM				"gethostbyaddr_r"
+#define GETHOSTBYADDR_R_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( THIS_PROGRAM_USES_AF_DEPENDENT("gethostbyaddr_r") )      \
 							SOLUTION( USE_GETADDRINFO_AF_UNSPEC_AI_NUMERICHOST )
 
 // inet_addr

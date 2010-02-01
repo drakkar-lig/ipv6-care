@@ -31,13 +31,14 @@
 # Etienne DUBLE 	-2.3:	Added bash completion
 # Etienne DUBLE 	-3.0:	Introduced patching mode - reorganised the source tree - automatic dependencies
 # Etienne DUBLE 	-2.5:	Added man page
-# 
+# Etienne DUBLE 	-2.5:	Compression of man page at install
+# Etienne DUBLE 	-3.0:	Disable system patch mode at install/uninstall (if enabled)
 
 VERSION=3.0-alpha2
 
 PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)
-OPTIONS=-g -Wall -W
+OPTIONS=-g -Wall -W -D_GNU_SOURCE -D_BSD_SOURCE
 
 list_objects=$(shell ls src/$(1)/*.c 2>/dev/null | sed -e "s/\.c/\.o/g" | sed -e "s/src/out/g") 
 
@@ -63,11 +64,14 @@ clean:
 	rm -rf out 
 
 install:
+	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload | wc -l)" -gt 0 ] ; \
+	 then 	ipv6_care system patch; \
+	 fi
 	@cp -f scripts/ipv6_care /usr/bin/
 	@cp -f scripts/IPv6_CARE_*.sh /usr/bin/
 	@cp -f out/libipv6_care_checking.so /usr/lib/
 	@cp -f out/libipv6_care_patching.so /usr/lib/
-	@cp -f man/ipv6_care.8.gz /usr/share/man/man8/
+	@gzip -c man/ipv6_care.8 > /usr/share/man/man8/ipv6_care.8.gz
 	@if [ -d /etc/bash_completion.d ] ; \
 	 then 	cp scripts/complete.sh /etc/bash_completion.d/ipv6_care ; \
 	 	echo "bash completion will only be updated when you start a new bash session." ; \
@@ -75,12 +79,16 @@ install:
 	@echo "install done."
 
 uninstall:
-	rm -f /usr/bin/ipv6_care
-	rm -f /usr/bin/IPv6_CARE_*.sh
-	rm -f /usr/lib/libipv6_care_checking.so
-	rm -f /usr/lib/libipv6_care_patching.so
-	rm -f /usr/share/man/man8/ipv6_care.8.gz
-	rm -f /etc/bash_completion.d/ipv6_care
+	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload | wc -l)" -gt 0 ] ; \
+	 then 	ipv6_care system patch >/dev/null; \
+	 fi
+	@rm -f /usr/bin/ipv6_care
+	@rm -f /usr/bin/IPv6_CARE_*.sh
+	@rm -f /usr/lib/libipv6_care_checking.so
+	@rm -f /usr/lib/libipv6_care_patching.so
+	@rm -f /usr/share/man/man8/ipv6_care.8.gz
+	@rm -f /etc/bash_completion.d/ipv6_care
+	@echo "uninstall done."
 
 define package_creation
 	rm -rf $@ /tmp/$*

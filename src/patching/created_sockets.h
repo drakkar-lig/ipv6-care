@@ -28,22 +28,9 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __CREATED_SOCKETS_H__
 #define __CREATED_SOCKETS_H__
 
-#include <netinet/in.h>
+#define INITIAL_SOCKET_WAS_CLOSED -1
 
-union u_sockaddr {
-	struct sockaddr_storage sas;
-	struct sockaddr sa;
-};
-
-struct listening_socket_data 
-{
-	int socket;
-	int socktype;
-	union u_sockaddr sockaddr;
-	unsigned int sa_len;
-};
-
-void register_created_socket(int initial_socket, struct listening_socket_data *data);
-struct listening_socket_data *find_created_socket_for_initial_socket(int initial_socket);
-int find_initial_socket_for_created_socket(int created_socket);
+void register_created_socket(int initial_socket, int created_socket);
+int get_initial_socket_for_created_socket(int created_socket);
+int get_created_socket_for_initial_socket(int initial_socket);
 #endif

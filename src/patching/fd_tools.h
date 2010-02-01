@@ -28,11 +28,10 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __FD_TOOLS_H__
 #define __FD_TOOLS_H__
 
-#define _GNU_SOURCE
 #include <sys/select.h>
 #include <poll.h>
 
-#include "created_sockets.h"
+#include "socket_info.h"
 
 enum list_of_fd_access_types {
 	eAccessType_Read,
@@ -42,7 +41,6 @@ enum list_of_fd_access_types {
 	eAccessType_Connect
 };
 
-int get_equivalent_address(struct sockaddr *sa, unsigned int sa_size, struct sockaddr *new_sa, unsigned int *new_sa_size);
 int create_socket_on_specified_free_fd(int fd, int family, int socktype, int protocol);
 int get_additional_listening_socket_if_needed(int initial_socket);
 int wait_on_two_sockets(int socket1, int socket2);

@@ -30,7 +30,6 @@ Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 Etienne DUBLE 	-2.5:	Removed variable log_all
 
 */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

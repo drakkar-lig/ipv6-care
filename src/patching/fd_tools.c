@@ -23,6 +23,7 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
+Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 
 */
 #include <sys/socket.h>
@@ -32,52 +33,13 @@ Etienne DUBLE 	-3.0:	Creation
 #include <stdlib.h>
 
 #include "fd_tools.h"
-#include "original_functions.h"
+#include "common_original_functions.h"
+#include "common_networking_tools.h"
+#include "created_sockets.h"
+#include "family.h"
+#include "addresses_and_names.h"
 
-#define MAX_HOST_SIZE	128
-#define MAX_SERV_SIZE	128
 #define MAX_FREE_FILE_DESCRIPTORS	256
-
-#define OTHER_FAMILY(af) ((af == AF_INET6)?AF_INET:AF_INET6)
-
-int get_equivalent_address(struct sockaddr *sa, unsigned int sa_size, struct sockaddr *new_sa, unsigned int *new_sa_size)
-{
-	int result;
-	char host[MAX_HOST_SIZE], service[MAX_SERV_SIZE];
-	struct addrinfo hints, *address_list, *first_address;
-
-	// get the hostname
-	result = getnameinfo(sa, sa_size, host, MAX_HOST_SIZE, service, MAX_SERV_SIZE, NI_NUMERICSERV);
-	if (result == 0)
-	{
-		// get its IP of the other family
-		if (strcmp(host, "::") == 0)
-		{
-			strcpy(host, "0.0.0.0");
-		}
-		else
-		{
-			if (strcmp(host, "0.0.0.0") == 0)
-			{
-				strcpy(host, "::");
-			}
-		}
-		
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = OTHER_FAMILY(sa->sa_family);
-		result = getaddrinfo(host, service, &hints, &address_list);
-		if (result == 0)
-		{
-			first_address = address_list;
-			// copy data to pointer arguments
-			memcpy(new_sa, first_address->ai_addr, first_address->ai_addrlen);
-			*new_sa_size = first_address->ai_addrlen;
-			// free the memory
-			freeaddrinfo(address_list);
-		}
-	}
-	return result;
-}
 
 /*
 	Consider the following scenario:
@@ -135,133 +97,92 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 		}
 	}
 	return result;
-
-/*	-- OLD CODE -- 
-	int result, new_socket, num_dummy_sockets, fd_index;
-	int dummy_sockets[MAX_FREE_FILE_DESCRIPTORS];
-
-	num_dummy_sockets = 0;
-	result = -1;
-	while (num_dummy_sockets < MAX_FREE_FILE_DESCRIPTORS)
-	{
-		// create the socket
-		new_socket = socket(family, socktype, protocol);
-		if (new_socket == -1)
-		{	// if error stop
-			break;
-		}
-		else
-		{	// if ok check if the file descriptor is the correct one
-			if (new_socket == fd)
-			{
-				result = 0;
-				break;
-			}
-			else
-			{	// this socket will just keep the fd unavailable
-				dummy_sockets[num_dummy_sockets] = new_socket;
-				num_dummy_sockets++;
-			}
-		}
-	}
-
-	// these dummy sockets are not useful anymore
-	for (fd_index = 0; fd_index < num_dummy_sockets; fd_index++)
-	{
-		original_close(dummy_sockets[fd_index]);
-	}
-
-	return result;
-*/
-}
-
-void get_listening_socket_info(int socket, struct listening_socket_data *data)
-{
-	unsigned int socktype_size;
-
-	data->socket = socket;
-	// retrieve the type of this socket
-	socktype_size = sizeof(data->socktype);
-	getsockopt(socket, SOL_SOCKET, SO_TYPE, (char *)&data->socktype, &socktype_size);
-	// retrieve the address where this socket is bound
-	data->sa_len = sizeof(data->sockaddr.sas);
-	getsockname(socket, &data->sockaddr.sa, &data->sa_len);
 }
 
 int get_additional_listening_socket_if_needed(int initial_socket)
 {
-	int on = 1, additional_listening_socket_needed, v6only_option;
-	struct listening_socket_data initial_socket_data, new_socket_data, *found_socket_data;
-	unsigned int v6only_option_size;
+	int on = 1, additional_listening_socket_needed;
+	int created_socket;
+	struct polymorphic_sockaddr *initial_socket_psa, created_socket_psa; 
+	int type, protocol, backlog, v6only_option; 
 	
-	new_socket_data.socket = -1;
-	found_socket_data = find_created_socket_for_initial_socket(initial_socket);
+	created_socket = -1;
 
-	if (found_socket_data != NULL)
-	{	// such a socket has already been created previously
-		return found_socket_data->socket;
-	}
-	else
+	if (test_if_fd_is_a_network_socket(initial_socket) == 1)
 	{
-		get_listening_socket_info(initial_socket, &initial_socket_data);
+		created_socket = get_created_socket_for_initial_socket(initial_socket);
 
-		additional_listening_socket_needed = 1;
-		if (initial_socket_data.sockaddr.sa.sa_family == AF_INET6) // the existing socket is an IPv6 socket
-		{
-			// retrieve the IPV6_V6ONLY option in order to know if IPv4 clients are also accepted
-			v6only_option_size = sizeof(v6only_option);
-			getsockopt(initial_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&v6only_option, &v6only_option_size);
-			if (v6only_option == 0)
-			{	// this IPv6 socket also accepts IPv4 connections, so no need to continue
-				additional_listening_socket_needed = 0;
-			}
+		if (created_socket != -1)
+		{	// such a socket has already been created previously
+			return created_socket;
 		}
-
-		if (additional_listening_socket_needed == 1)
+		else
 		{
-			memcpy(&new_socket_data, &initial_socket_data, sizeof(new_socket_data));
-			new_socket_data.socket = -1;
+			initial_socket_psa = get_listening_socket_address(initial_socket);
 
-			// TO DO: 0 pour le protocol ce n est pas genial, il vaut mieux enregistrer
-			// au moment de l appel socket ses caracteristiques (et tous les setsockopt() listen() bind()... 
-			// pendant qu on y est) - meme problem pour le 10 dans le listen plus loin
-			if (get_equivalent_address(	&initial_socket_data.sockaddr.sa, initial_socket_data.sa_len, 
-							&new_socket_data.sockaddr.sa, &new_socket_data.sa_len) == 0)
+			additional_listening_socket_needed = 1;
+			if (initial_socket_psa->sockaddr.sa.sa_family == AF_INET6) // the existing socket is an IPv6 socket
 			{
-				new_socket_data.socket = socket(new_socket_data.sockaddr.sa.sa_family, new_socket_data.socktype, 0);
-				if (new_socket_data.socket != -1)
-				{
-					// set SO_REUSEADDR option
-					setsockopt(new_socket_data.socket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
-					
-					// in case of an IPv6 socket, being an additional socket (i.e. there is already another socket 
-					// listening for IPv4 clients) we must set IPV6_V6ONLY to 1 
-					if (new_socket_data.sockaddr.sa.sa_family == AF_INET6)
-					{
-						setsockopt(new_socket_data.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
-					}
-					if (bind(new_socket_data.socket, &new_socket_data.sockaddr.sa, new_socket_data.sa_len) == -1)
-					{
-						close(new_socket_data.socket);
-						new_socket_data.socket = -1;
-					}
+				// retrieve the IPV6_V6ONLY option in order to know if IPv4 clients are also accepted
+				if (get_listening_socket_v6only_option(initial_socket) == 0)
+				{	// this IPv6 socket also accepts IPv4 connections, so no need to continue
+					additional_listening_socket_needed = 0;
 				}
-				if (new_socket_data.socket != -1)
+			}
+
+			if (additional_listening_socket_needed == 1)
+			{
+				if (get_equivalent_address(initial_socket_psa, &created_socket_psa) == 0)
 				{
-					if (listen(new_socket_data.socket, 10) == -1)
+					type = get_socket_type(initial_socket);
+					protocol = get_socket_protocol(initial_socket);
+					created_socket = socket(created_socket_psa.sockaddr.sa.sa_family, type, protocol);
+
+					if (created_socket != -1)
 					{
-						close(new_socket_data.socket);
-						new_socket_data.socket = -1;
+						// TO DO: remapper les setsokopt de la socket initiale
+						// set SO_REUSEADDR option
+						setsockopt(created_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
+						
+						// in case of an IPv6 socket, being an additional socket (i.e. there is already another socket 
+						// listening for IPv4 clients) we must set IPV6_V6ONLY to 1 
+						v6only_option = 0;
+						if (created_socket_psa.sockaddr.sa.sa_family == AF_INET6)
+						{
+							setsockopt(created_socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on, sizeof(on));
+							v6only_option = 1;
+						}
+						if (bind(created_socket, &created_socket_psa.sockaddr.sa, created_socket_psa.sa_len) == -1)
+						{
+							close(created_socket);
+							created_socket = -1;
+						}
 					}
-					else
+					if (created_socket != -1)
 					{
-						register_created_socket(initial_socket, &new_socket_data);
+						backlog = get_listening_socket_backlog(initial_socket);
+						if (listen(created_socket, backlog) == -1)
+						{
+							close(created_socket);
+							created_socket = -1;
+						}
+						else
+						{
+							// register all the data about the socket we created
+							register_created_socket(initial_socket, created_socket);
+							register_socket_type(created_socket, type);
+							register_socket_state(created_socket, socket_state_listening);
+							register_socket_protocol(created_socket, protocol);
+							register_listening_socket_address(created_socket, &created_socket_psa);
+							register_listening_socket_backlog(created_socket, backlog);
+							register_listening_socket_v6only_option(created_socket, v6only_option);
+						}
 					}
 				}
 			}
 		}
 	}
-	return new_socket_data.socket;
+	return created_socket;
 }
 
 int wait_on_two_sockets(int socket1, int socket2)
@@ -304,20 +225,18 @@ int manage_socket_access_on_fd(enum list_of_fd_access_types access_type, int fd)
 
 void close_sockets_related_to_fd(int fd)
 {
-	struct listening_socket_data *found_socket_data;
+	int created_socket;
 	
-	found_socket_data = find_created_socket_for_initial_socket(fd);
-	if (found_socket_data != NULL)
+	created_socket = get_created_socket_for_initial_socket(fd);
+	if (created_socket != -1)
 	{
-		close(found_socket_data->socket);
+		close(created_socket);
 	}
 }
 
 void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *final_fds)
 {
-	int fd, new_socket_created;
-	int is_a_listening_socket;
-	unsigned int opt_len;
+	int fd, created_socket;
 	int initial_nfds;
 
 	initial_nfds = *nfds;
@@ -332,21 +251,17 @@ void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *fin
 			{
 				FD_SET(fd, final_fds);
 
-				opt_len = sizeof(is_a_listening_socket);
-				if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &is_a_listening_socket, &opt_len) == 0)
+				if (get_socket_state(fd) == socket_state_listening)
 				{
-					if (is_a_listening_socket == 1)
-					{
-						new_socket_created = get_additional_listening_socket_if_needed(fd);
-						if (new_socket_created != -1)
-						{	// a new socket was created, add it in the final_fds
-							FD_SET(new_socket_created, final_fds);
+					created_socket = get_additional_listening_socket_if_needed(fd);
+					if (created_socket != -1)
+					{	// a new socket was created, add it in the final_fds
+						FD_SET(created_socket, final_fds);
 
-							// update nfds if needed
-							if (new_socket_created >= *nfds)
-							{
-								*nfds = new_socket_created +1;
-							}
+						// update nfds if needed
+						if (created_socket >= *nfds)
+						{
+							*nfds = created_socket +1;
 						}
 					}
 				}
@@ -365,7 +280,7 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 	// to light when we try to FD_ZERO(initial_fds).
 	// So we do it in a less intrusive way:
 	// 1) We update a local fd_set called resulting_initial_fds
-	// 2) We report values to initial_fds but by changing only the values which are different
+	// 2) We report values to initial_fds by changing only the values which are different
 
 	if (initial_fds != NULL)
 	{ 
@@ -377,9 +292,9 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 		{
 			if (FD_ISSET(fd, final_fds))
 			{
-				initial_socket = find_initial_socket_for_created_socket(fd);
+				initial_socket = get_initial_socket_for_created_socket(fd);
 				if (initial_socket == -1)
-				{	// fd was not created by IPv6 CARE, just set it back in initial_fds
+				{	// fd has no corresponding initial_socket
 					FD_SET(fd, &resulting_initial_fds);
 				}
 				else
@@ -409,9 +324,7 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct pollfd *fds, struct pollfd **final_fds)
 {
 	int allocated, new_nfds, fd, index;
-	int new_socket_created;
-	int is_a_listening_socket;
-	unsigned int opt_len;
+	int created_socket;
 
 	allocated = nfds+2;
 	*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
@@ -421,27 +334,23 @@ void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct po
 	for (index = 0; index < nfds; index++)
 	{
 		fd = fds[index].fd;
-		opt_len = sizeof(is_a_listening_socket);
-		if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &is_a_listening_socket, &opt_len) == 0)
+		if (get_socket_state(fd) == socket_state_listening)
 		{
-			if (is_a_listening_socket == 1)
-			{
-				new_socket_created = get_additional_listening_socket_if_needed(fd);
-				if (new_socket_created != -1)
-				{	// a new socket was created, add it in the final_fds
-					
-					// enlarge the table if needed
-					if (new_nfds == allocated)
-					{
-						allocated = 2*allocated;
-						*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
-					}
-
-					// copy the info and set the fd as the new socket
-					memcpy(&(*final_fds)[new_nfds], &fds[index], sizeof(struct pollfd));
-					(*final_fds)[new_nfds].fd = new_socket_created;
-					new_nfds ++;
+			created_socket = get_additional_listening_socket_if_needed(fd);
+			if (created_socket != -1)
+			{	// a new socket was created, add it in the final_fds
+				
+				// enlarge the table if needed
+				if (new_nfds == allocated)
+				{
+					allocated = 2*allocated;
+					*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
 				}
+
+				// copy the info and set the fd as the new socket
+				memcpy(&(*final_fds)[new_nfds], &fds[index], sizeof(struct pollfd));
+				(*final_fds)[new_nfds].fd = created_socket;
+				new_nfds ++;
 			}
 		}
 	}
@@ -462,11 +371,8 @@ void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct poll
 		if (final_fds[index].revents > 0) // if something happened there
 		{
 			fd = final_fds[index].fd;
-			initial_socket = find_initial_socket_for_created_socket(fd);
-			if (initial_socket == -1)
-			{	// should not occur since we started the loop at nfds
-			}
-			else
+			initial_socket = get_initial_socket_for_created_socket(fd);
+			if (initial_socket != -1)
 			{	// fd was created by IPv6 CARE, set the flags on the initial socket
 
 				// first, find where is this initial socket in the table

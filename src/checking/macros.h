@@ -28,6 +28,7 @@ Etienne DUBLE 	- 1.1: 	Did the original call first in order to get the result
 Etienne DUBLE 	- 2.2:	Reworked init_lib mechanism and implementation
 Etienne DUBLE 	- 2.3:	Corrected the comment
 Etienne DUBLE   - 2.4:  Thread management
+Etienne DUBLE   - 3.0:  Original functions now in 'common' directory
 
 */
 #ifndef __MACROS_H__
@@ -35,9 +36,8 @@ Etienne DUBLE   - 2.4:  Thread management
 
 #include "init_lib.h"
 #include "log.h"
-#include "common_other_tools.h"
 #include "function_state.h"
-#include "common_macros.h"
+#include "common_original_functions.h"
 
 extern int max_function_depth_reported;
 
@@ -66,12 +66,10 @@ extern __thread int function_analysis_started;
  * __START_FUNCTION_CALL_ANALYSIS, but it is required by the compiler.)
  */
 
-#define __START_FUNCTION_CALL_ANALYSIS(__func_name, 				\
-		__func_args, __func_return_value_if_error)			\
+#define __START_FUNCTION_CALL_ANALYSIS(__func_call)				\
 										\
 	static enum function_state __state__ = initial_state;			\
-	typeof(__func_name) *p_original_func;					\
-	typeof(__func_name __func_args) __result__;				\
+	typeof(__func_call) __result__;						\
 										\
 	one_time_library_init(&__state__);					\
 										\
@@ -81,32 +79,22 @@ extern __thread int function_analysis_started;
 			if ((function_analysis_started == 0) &&			\
 			    (function_depth <= max_function_depth_reported)) {	\
 				__state__ = analysis_state;			\
-				__func_name __func_args;			\
+				__func_call;					\
 			}							\
 			__state__ = call_original_function_state; 		\
-			return __func_name __func_args;                 	\
+			return __func_call;                 			\
 										\
 		case call_original_function_state:				\
-			p_original_func = (typeof(p_original_func))		\
-				get_symbol((char *)__FUNCTION__); 		\
-			if (p_original_func != NULL) 				\
-			{							\
-				function_depth += 1; 				\
-				__result__ = p_original_func __func_args;	\
-				function_depth -= 1;				\
-				__state__ = initial_state;			\
-				return __result__;				\
-			}							\
-			else 							\
-			{							\
-				__state__ = initial_state;			\
-				return __func_return_value_if_error;		\
-			}							\
+			function_depth += 1; 					\
+			__result__ = original_ ## __func_call;			\
+			function_depth -= 1;					\
+			__state__ = initial_state;				\
+			return __result__;					\
 										\
 		case analysis_state:						\
 			if (function_analysis_started == 1) {			\
 				__state__ = call_original_function_state;	\
-				return __func_name __func_args;			\
+				return __func_call;				\
 			}							\
 			break;							\
 	}									\
@@ -119,11 +107,9 @@ extern __thread int function_analysis_started;
 	function_analysis_started = 0;						\
 	return (typeof(__result__))0;
 	
-#define __START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(__func_name, 		\
-		__func_args)							\
+#define __START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(__func_call)		\
 										\
 	static enum function_state __state__ = initial_state;			\
-	typeof(__func_name) *p_original_func;					\
 										\
 	one_time_library_init(&__state__);					\
 										\
@@ -133,33 +119,23 @@ extern __thread int function_analysis_started;
 			if ((function_analysis_started == 0) &&			\
 			    (function_depth <= max_function_depth_reported)) {	\
 				__state__ = analysis_state;			\
-				__func_name __func_args;			\
+				__func_call;					\
 			}							\
 			__state__ = call_original_function_state; 		\
-			__func_name __func_args;                 		\
+			__func_call;                 				\
 			return;							\
 										\
 		case call_original_function_state:				\
-			p_original_func = (typeof(p_original_func))		\
-				get_symbol((char *)__FUNCTION__); 		\
-			if (p_original_func != NULL) 				\
-			{							\
-				function_depth += 1; 				\
-				p_original_func __func_args;			\
-				function_depth -= 1;				\
-				__state__ = initial_state;			\
-				return;						\
-			}							\
-			else 							\
-			{							\
-				__state__ = initial_state;			\
-				return;						\
-			}							\
+			function_depth += 1; 					\
+			original_ ## __func_call;				\
+			function_depth -= 1;					\
+			__state__ = initial_state;				\
+			return;							\
 										\
 		case analysis_state:						\
 			if (function_analysis_started == 1) {			\
 				__state__ = call_original_function_state;	\
-				__func_name __func_args;			\
+				__func_call;					\
 				return;						\
 			}							\
 			break;							\

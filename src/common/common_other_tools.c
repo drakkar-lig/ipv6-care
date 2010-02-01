@@ -28,10 +28,6 @@ Etienne DUBLE 	-2.4:	Moved to the common directory
 Etienne DUBLE 	-2.4:	Added get_thread_id
 
 */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -39,14 +35,34 @@ Etienne DUBLE 	-2.4:	Added get_thread_id
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <stdarg.h>
 
 // This function tries to locate the original networking function of the libc
-void *get_symbol(char *symbol)
+void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 {
-	void *p_symbol;
-	char *dlerr;
+	void *p_symbol = NULL;
+	char *dlerr, *symbol_version;
+	va_list ap;
+	int i;
+
+	// try the given symbol versions provided first, if any
+	va_start(ap, symbol);
+	for(i=1; i<num_args; i++)
+	{
+		symbol_version = va_arg(ap, char *);
+		p_symbol = dlvsym(RTLD_NEXT,symbol,symbol_version);
+		if (p_symbol != NULL)
+		{
+			break;
+		}
+	}
+	va_end(ap);
 	
-	p_symbol = dlsym(RTLD_NEXT,symbol);
+	// try dlsym with no version specified
+	if (p_symbol == NULL)
+	{
+		p_symbol = dlsym(RTLD_NEXT,symbol);
+	}
 	
         if (p_symbol == NULL)
         {

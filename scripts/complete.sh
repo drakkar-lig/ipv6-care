@@ -28,6 +28,9 @@
 # Etienne DUBLE 	-3.0:	Introduced option patch
 # Etienne DUBLE 	-3.0:	Introduced option system patch
 # Etienne DUBLE 	-2.5:	Removed variable log_all / option -o
+# Etienne DUBLE 	-2.5:	Variable PATCH_MODE_ENABLED
+
+PATCH_MODE_ENABLED=1
 
 # features supported by bash 2.05 and higher
 if [ ${BASH_VERSINFO[0]} -eq 2 ] && [[ ${BASH_VERSINFO[1]} > 04 ]] ||
@@ -42,20 +45,26 @@ remove_prefix()
 	old_length="${#COMP_LINE}"
 	COMP_LINE="${COMP_LINE#ipv6_care[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#check[[:space:]]*}"
-	COMP_LINE="${COMP_LINE#patch[[:space:]]*}"
+	if [ "$PATCH_MODE_ENABLED" = "1" ] 
+	then
+		COMP_LINE="${COMP_LINE#patch[[:space:]]*}"
+		COMP_LINE="${COMP_LINE#system[[:space:]]*}"
+	fi
 	COMP_LINE="${COMP_LINE#shell[[:space:]]*}"
 	COMP_LINE="${COMP_LINE#binary[[:space:]]*}"
-	COMP_LINE="${COMP_LINE#system[[:space:]]*}"
 	num_removed_words=$((num_removed_words +2))
 	if [ "${COMP_WORDS[num_removed_words]}" = "lookup" -a $COMP_CWORD -gt $num_removed_words ]
 	then
 		COMP_LINE="${COMP_LINE#lookup[[:space:]]*}"
 		num_removed_words=$((num_removed_words +1))
 	fi
-	if [ "${COMP_WORDS[num_removed_words]}" = "patch" -a $COMP_CWORD -gt $num_removed_words ]
+	if [ "$PATCH_MODE_ENABLED" = "1" ] 
 	then
-		COMP_LINE="${COMP_LINE#lookup[[:space:]]*}"
-		num_removed_words=$((num_removed_words +1))
+		if [ "${COMP_WORDS[num_removed_words]}" = "patch" -a $COMP_CWORD -gt $num_removed_words ]
+		then
+			COMP_LINE="${COMP_LINE#lookup[[:space:]]*}"
+			num_removed_words=$((num_removed_words +1))
+		fi
 	fi
 	if [ "${COMP_WORDS[num_removed_words]}" = "-v" -a $COMP_CWORD -gt $num_removed_words ]
 	then
@@ -129,7 +138,12 @@ complete_ipv6_care()
 	
 	if [ $COMP_CWORD = "1" ]
 	then
-		COMPREPLY=( $(compgen -W "check patch shell binary system" -- "$cur") );
+		if [ "$PATCH_MODE_ENABLED" = "1" ] 
+		then
+			COMPREPLY=( $(compgen -W "check patch shell binary system" -- "$cur") );
+		else
+			COMPREPLY=( $(compgen -W "check shell binary" -- "$cur") );
+		fi
 	else
 		MAIN_OPTION="${COMP_WORDS[1]}"
 
@@ -149,7 +163,10 @@ complete_ipv6_care()
 				fi
 				;;
 			"patch")
-				complete_following_command
+				if [ "$PATCH_MODE_ENABLED" = "1" ] 
+				then
+					complete_following_command
+				fi
 				;;
 			"shell")
 				#echo
@@ -189,16 +206,19 @@ complete_ipv6_care()
 				fi
 				;;
 			"system")
-				COMPREPLY=()
-				if [ "${COMP_WORDS[2]}" = "patch" -a $COMP_CWORD -gt 2 ] 
+				if [ "$PATCH_MODE_ENABLED" = "1" ] 
 				then
 					COMPREPLY=()
-				else
-					if [ $COMP_CWORD -gt 2 ]
+					if [ "${COMP_WORDS[2]}" = "patch" -a $COMP_CWORD -gt 2 ] 
 					then
 						COMPREPLY=()
 					else
-						COMPREPLY=( $(compgen -W "patch" -- "$cur") );
+						if [ $COMP_CWORD -gt 2 ]
+						then
+							COMPREPLY=()
+						else
+							COMPREPLY=( $(compgen -W "patch" -- "$cur") );
+						fi
 					fi
 				fi
 				;;

@@ -31,10 +31,6 @@ Etienne DUBLE 	-2.2:	get_interpreter_name() -> save_interpreter_name()
 Etienne DUBLE 	-2.4:	Provide diagnostic if system command fails
 
 */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <execinfo.h>

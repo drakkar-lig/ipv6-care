@@ -33,99 +33,73 @@ Etienne DUBLE 	-3.0:	Creation
 
 #include "created_sockets.h"
 
-/*	List Example --------------------------------------------------
-
-	LIST_HEAD(listhead, entry) head;
-	struct listhead *headp;                 // List head.
-	struct entry {
-		...
-		LIST_ENTRY(entry) entries;          // List. 
-		...
-	} *n1, *n2, *np;
-
-	LIST_INIT(&head);                       // Initialize the list. 
-
-	n1 = malloc(sizeof(struct entry));      // Insert at the head. 
-	LIST_INSERT_HEAD(&head, n1, entries);
-
-	n2 = malloc(sizeof(struct entry));      // Insert after. 
-	LIST_INSERT_AFTER(n1, n2, entries);
-	// Forward traversal. 
-	for (np = head.lh_first; np != NULL; np = np->entries.le_next)
-		np-> ...
-
-	while (head.lh_first != NULL)           // Delete. 
-		LIST_REMOVE(head.lh_first, entries);
-
-	free(n1);
-	free(n2);
-*/
+struct created_socket_data
+{
+	int created_socket;
+	int initial_socket;
+};
 
 struct created_socket_entry {
-	struct listening_socket_data data;
-	int initial_socket;
+	struct created_socket_data data;
 	LIST_ENTRY(created_socket_entry) entries;
 };
 
-LIST_HEAD(listhead, created_socket_entry) head;
+LIST_HEAD(created_socket_list_head_type, created_socket_entry) created_socket_list_head;
 
-int list_initialised = 0;
+int created_socket_list_initialised = 0;
 
-void init_list_if_needed()
+void init_created_socket_list_if_needed()
 {
-	if (list_initialised == 0)
+	if (created_socket_list_initialised == 0)
 	{
-		LIST_INIT(&head);
-		list_initialised = 1;
+		LIST_INIT(&created_socket_list_head);
+		created_socket_list_initialised = 1;
 	}
 }
 
-void register_created_socket(int initial_socket, struct listening_socket_data *data)
+void register_created_socket(int initial_socket, int created_socket)
 {
 	struct created_socket_entry *entry;
 
-	init_list_if_needed();
+	init_created_socket_list_if_needed();
 
 	entry = malloc(sizeof(struct created_socket_entry));
-	entry->data.socket = data->socket;
-	entry->data.socktype = data->socktype;
-	memcpy(&entry->data.sockaddr.sas, &data->sockaddr.sas, sizeof(entry->data.sockaddr.sas));
-	entry->data.sa_len = data->sa_len;
-	entry->initial_socket = initial_socket;
+	entry->data.initial_socket = initial_socket;
+	entry->data.created_socket = created_socket;
 
-	LIST_INSERT_HEAD(&head, entry, entries);
+	LIST_INSERT_HEAD(&created_socket_list_head, entry, entries);
 }
 
-struct listening_socket_data *find_created_socket_for_initial_socket(int initial_socket)
-{
-	struct created_socket_entry *entry;
-	struct listening_socket_data *result;
-
-	result = NULL;
-
-	for (entry = head.lh_first; entry != NULL; entry = entry->entries.le_next)
-	{
-		if (entry->initial_socket == initial_socket)
-		{
-			result = &entry->data;
-		}
-	}
-
-	return result;
-}
-
-int find_initial_socket_for_created_socket(int created_socket)
+int get_created_socket_for_initial_socket(int initial_socket)
 {
 	struct created_socket_entry *entry;
 	int result;
 
 	result = -1;
 
-	for (entry = head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	for (entry = created_socket_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
 	{
-		if (entry->data.socket == created_socket)
+		if (entry->data.initial_socket == initial_socket)
 		{
-			result = entry->initial_socket;
+			result = entry->data.created_socket;
+		}
+	}
+
+	return result;
+}
+
+int get_initial_socket_for_created_socket(int created_socket)
+{
+	struct created_socket_entry *entry;
+	int result;
+
+	result = -1;
+
+	for (entry = created_socket_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	{
+		if (entry->data.created_socket == created_socket)
+		{
+			result = entry->data.initial_socket;
 		}
 	}
 

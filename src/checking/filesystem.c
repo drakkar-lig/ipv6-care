@@ -33,7 +33,7 @@ Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 Etienne DUBLE 	-2.5:	Handling of wrong permissions of directories
 
 */
-#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>

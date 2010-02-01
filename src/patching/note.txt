@@ -1,7 +1,0 @@
-
-Fonctionnement d un serveur
----------------------------
-Lors des recherches d adresses enregistrer les couples address / nom -> utiliser les queues (man 3 queue)
-en cas d accept / select / pselect, recuperer l adresse ou la socket serveur est connectee par getsockname(), rechercher le nom (d abord dans le tableau, sinon par resolution inverse) puis voir si on a pas une adresse IPv6 pour le meme nom (d abord dans le tableau, sinon par resolution inverse).
-Questions: comment savoir si c est une socket serveur ou une socket de communication dans le tableau du select? getsockname(), getpeername() ? oui getsockopt(SO_ACCEPTCONN) dit si c est une socket d ecoute (man 7 socket), ou sinon a priori getpeername() echoue avec erreur ENOTCONN si c est une socket non connectee (ou au pire enregistrer les connect, bind, close pour savoir ce que sont les sockets...)
-

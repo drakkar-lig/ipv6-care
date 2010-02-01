@@ -27,10 +27,6 @@ Etienne DUBLE 	-2.1:	get_ip_string -> get_ip_string_and_port
 Etienne DUBLE 	-2.3:	Added test_if_fd_is_a_network_socket
 
 */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

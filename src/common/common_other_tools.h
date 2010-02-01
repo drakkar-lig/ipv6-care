@@ -29,6 +29,6 @@ Etienne DUBLE 	-3.0:	Moved to the common directory
 */
 #ifndef __COMMON_OTHER_TOOLS_H__
 #define __COMMON_OTHER_TOOLS_H__
-void *get_symbol(char *symbol);
+void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */);
 //char *get_program_name();
 #endif

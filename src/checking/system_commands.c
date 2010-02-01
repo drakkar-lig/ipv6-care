@@ -28,7 +28,6 @@ Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
 Etienne DUBLE 	-2.5:	ENDCOLOR before \n
 
 */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 

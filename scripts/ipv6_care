@@ -34,7 +34,10 @@
 # Etienne DUBLE 	-3.0:	Introduced system patch
 # Etienne DUBLE 	-2.5:	Manage IPV6_CARE_DEBUG_TOOL env variable
 # Etienne DUBLE 	-2.5:	Removed option -o
+# Etienne DUBLE 	-2.5:	Variable PATCH_MODE_ENABLED
 # 
+
+PATCH_MODE_ENABLED=1
 
 # update the COLUMNS variable
 COLUMNS=$(tput cols)
@@ -83,23 +86,32 @@ fi
 print_usage()
 {
 	echo >&2
-	echo "Usage: simple modes:" >&2
-	echo "       $this_program patch <program_command_line>              # -> patch mode" >&2
+	echo "Usage: simple mode(s):" >&2
+	if [ "$PATCH_MODE_ENABLED" = "1" ] 
+	then
+		echo "       $this_program patch <program_command_line>              # -> patch mode" >&2
+	fi
 	echo "       $this_program check [-v] <program_command_line>         # -> check mode" >&2
-	echo "Usage: system set up mode:" >&2
-	echo "       sudo $this_program system patch                         # -> patch all programs" >&2
+	if [ "$PATCH_MODE_ENABLED" = "1" ] 
+	then
+		echo "Usage: system set up mode:" >&2
+		echo "       sudo $this_program system patch                         # -> patch all programs" >&2
+	fi
 	echo "Others:"	>&2
-	echo "       $this_program sh[ell] [-v]                         # -> shell" >&2
+	echo "       $this_program sh[ell] [-v]                              # -> shell" >&2
 	echo "       $this_program binary lookup <path_to_binary>            # -> self-diagnosis" >&2
 	echo >&2
 	echo "Examples:" >&2
-	echo "$this_program patch nc -l -p 3333		# Adapt the behavior of 'nc -l -p 3333' in order to make it IPv6 compliant" >&2
-	echo "$this_program patch service mysql start	# Adapt the behavior of mysql server in order to make it IPv6 compliant" >&2
+	if [ "$PATCH_MODE_ENABLED" = "1" ] 
+	then
+		echo "$this_program patch nc -l -p 3333		# Adapt the behavior of 'nc -l -p 3333' in order to make it IPv6 compliant" >&2
+		echo "$this_program patch service mysql start	# Adapt the behavior of mysql server in order to make it IPv6 compliant" >&2
+		echo "sudo $this_program system patch	 	# Toggle patch-mode for all programs started on this system" >&2
+	fi
 	echo "$this_program check nc -l -p 3333		# Diagnose IPv6 compliance of 'nc -l -p 3333'" >&2
 	echo "$this_program check -v nc -l -p 3333	# Same, but also display function calls on standard output" >&2
 	echo "$this_program shell 			# start IPv6 CARE shell - log all network-related programs" >&2
 	echo "$this_program binary lookup /bin/nc 	# Verify that IPv6 CARE can work correctly with the binary 'nc'" >&2
-	echo "sudo $this_program system patch	 	# Toggle patch-mode for all programs started on this system" >&2
 	echo >&2
 }
 
@@ -274,19 +286,25 @@ case "$1" in
 	"patch")
 		shift
 
-		# format the command line
-		program_to_patch="$(
-			source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
-		)"
-
-		# check that it seems ok
-		if [ "$program_to_patch" = "" ]
+		if [ "$PATCH_MODE_ENABLED" = "1" ] 
 		then
-			echo "Usage: $this_program patch <program_command_line_which_must_be_patched_regarding_IPv6>" >&2
+			# format the command line
+			program_to_patch="$(
+				source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
+			)"
+
+			# check that it seems ok
+			if [ "$program_to_patch" = "" ]
+			then
+				echo "Usage: $this_program patch <program_command_line_which_must_be_patched_regarding_IPv6>" >&2
+				exit
+			fi
+
+			LD_PRELOAD="$patching_library" eval "$program_to_patch"
+		else
+			print_usage
 			exit
 		fi
-
-		LD_PRELOAD="$patching_library" eval "$program_to_patch"
 		;;
 
 	"binary")
@@ -307,35 +325,41 @@ case "$1" in
 
 	"system")
 		shift
-		if [ "$1" != "patch" ]
+		if [ "$PATCH_MODE_ENABLED" = "1" ] 
 		then
-			print_usage
-			exit
-		fi
-		if [ "$(whoami)" != "root" ] 
-		then
-			echo "This must be run as root. Aborted."
-		else
-			patch_mode_was="off"	 # init
-			if [ -f "/etc/ld.so.preload" ]
+			if [ "$1" != "patch" ]
 			then
-				if [ "$(grep "$patching_library" /etc/ld.so.preload | wc -l)" -gt 0 ]
+				print_usage
+				exit
+			fi
+			if [ "$(whoami)" != "root" ] 
+			then
+				echo "This must be run as root. Aborted."
+			else
+				patch_mode_was="off"	 # init
+				if [ -f "/etc/ld.so.preload" ]
 				then
-					escaped_patching_library=$(echo /usr/lib/libipv6_care_patching.so | sed -e 's/\//\\\//g')
-					updated_content=$(cat /etc/ld.so.preload | sed -e "s/[:space:]*$escaped_patching_library//g")
-					echo "$updated_content" > /etc/ld.so.preload
-					echo -e "System patch-mode was [on]. It is now [${GREEN}off${ENDCOLOR}]."
-					patch_mode_was="on"
+					if [ "$(grep "$patching_library" /etc/ld.so.preload | wc -l)" -gt 0 ]
+					then
+						escaped_patching_library=$(echo /usr/lib/libipv6_care_patching.so | sed -e 's/\//\\\//g')
+						updated_content=$(cat /etc/ld.so.preload | sed -e "s/[:space:]*$escaped_patching_library//g")
+						echo "$updated_content" > /etc/ld.so.preload
+						echo -e "System patch-mode was [on]. It is now [${GREEN}off${ENDCOLOR}]."
+						patch_mode_was="on"
+					fi
+				fi
+				if [ "$patch_mode_was" = "off" ]
+				then
+					echo " /usr/lib/libipv6_care_patching.so" >> /etc/ld.so.preload
+					echo -e "System patch-mode was [off]. It is now [${GREEN}on${ENDCOLOR}]."
+					echo -e "${RED}CAUTION${ENDCOLOR}: Patch-mode is activated for all programs you start from now on!"
+					echo -e "         If you restart the operating system, it will be also true for all programs run at startup!"
+					echo -e "         Type '${GREEN}sudo $this_program system patch${ENDCOLOR}' again if you want to disable it."
 				fi
 			fi
-			if [ "$patch_mode_was" = "off" ]
-			then
-				echo " /usr/lib/libipv6_care_patching.so" >> /etc/ld.so.preload
-				echo -e "System patch-mode was [off]. It is now [${GREEN}on${ENDCOLOR}]."
-				echo -e "${RED}CAUTION${ENDCOLOR}: Patch-mode is activated for all programs you start from now on!"
-				echo -e "         If you restart the operating system, it will be also true for all programs run at startup!"
-				echo -e "         Type '${GREEN}sudo $this_program system patch${ENDCOLOR}' again if you want to disable it."
-			fi
+		else
+			print_usage
+			exit
 		fi
 		;;
 

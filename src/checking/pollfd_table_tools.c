@@ -25,7 +25,6 @@ Last modifications:
 Etienne DUBLE 	-2.5:	Creation
 
 */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/socket.h>
 #include <poll.h>
