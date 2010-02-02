@@ -26,6 +26,7 @@ Etienne DUBLE 	-3.0:	Creation
 
 */
 
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
@@ -57,9 +58,10 @@ int reopen_socket_with_other_family(int s, int family)
 	if (create_socket_on_specified_free_fd(s, family, type, protocol) == -1)
 	{	// failed ! recreate socket previously closed
 		create_socket_on_specified_free_fd(s, OTHER_FAMILY(family), type, protocol);
+		result = -1;
 	}
 
-	return -1;
+	return result;
 }
 
 struct ipv4_mapping_data *get_mapping_data_if_host_is_ipv6_only(struct polymorphic_sockaddr *psa)
@@ -87,6 +89,10 @@ int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa)
 		register_socket_state(s, socket_state_communicating);
 		register_remote_socket_address(s, psa);
 	}
+	else
+	{
+		printf("connection failed: %s\n", strerror(errno));
+	}
 
 	return result;
 }
@@ -112,15 +118,18 @@ int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *i
 		result = try_connect_and_register_connection(s, &ipv6_psa);
 		if (result == 0)
 		{
+			printf("connection ok!\n");
 			register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
 		}
 		else
 		{	// reopen socket as initially
+			printf("connection failed. recreating socket as ipv4.\n");
 			reopen_socket_with_other_family(s, AF_INET);
 		}
 	}
 	else
 	{	// could not recreate the socket as AF_INET6
+		printf("could not reopen socket as IPv6.\n");
 		errno = EHOSTUNREACH;
 	}
 

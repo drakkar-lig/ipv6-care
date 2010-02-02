@@ -57,11 +57,8 @@ int accept(int socket, struct sockaddr *address,
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
-		printf("Got 1\n");
-
 		new_socket_created = get_additional_listening_socket_if_needed(socket);
 
-		printf("new_socket_created = %d\n", new_socket_created);
 		if (new_socket_created != -1)
 		{
 			// wait on the two file descriptors
@@ -104,6 +101,7 @@ int connect(int s, const struct sockaddr *address,
 
 	if (mapping_data != NULL)
 	{
+		printf("found mapping.\n");
 		// this is the case when a host had only an IPv6 address and, during the name resolution
 		// phase, a mapping was set up. We will now try to connect to the original IPv6 address.
 		result = try_connect_using_ipv6_addr_of_mapping(s, &original_psa, mapping_data);
@@ -188,8 +186,7 @@ struct hostent *gethostbyname(const char *name)
 	return function_result;
 }
 
-//int gethostbyname_r(const char *name,
-int gethostbyname_r_test(const char *name,
+int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
@@ -199,7 +196,6 @@ int gethostbyname_r_test(const char *name,
 	struct polymorphic_addr pa;
 
 	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
-	//function_result = gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 	if (function_result != 0)
 	{
 		if (	(h_errnop != NULL)&& 
@@ -244,6 +240,16 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		record_sa_address_name_match((struct sockaddr *)sa, node);
 	}
 */	return result;
+}
+
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	return original_getpeername(sockfd, addr, addrlen);
+}
+
+int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	return original_getsockname(sockfd, addr, addrlen);
 }
 
 in_addr_t inet_addr(const char *cp) 

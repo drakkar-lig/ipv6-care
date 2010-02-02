@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="src/checking/overwritten_functions.c src/patching/original_functions.c src/patching/socket_info.c"
+files="src/checking/overwritten_functions.c src/common/original_functions.c src/patching/socket_info.c"
 
 save_files()
 {
@@ -8,7 +8,7 @@ save_files()
 	do
 		cp $1 $1.sav
 		cp $1 $1.sav$$
-		gcc -D_GNU_SOURCE -D_BSD_SOURCE -E -P -Isrc/common $1 | indent -st > $1.debug
+		gcc -D_GNU_SOURCE -D_BSD_SOURCE -E -P -Isrc/common $1 | indent -st -kr > $1.debug
 		mv $1.debug $1
 
 		shift

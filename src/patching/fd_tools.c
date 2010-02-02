@@ -26,6 +26,7 @@ Etienne DUBLE 	-3.0:	Creation
 Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 
 */
+#include <stdio.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -74,6 +75,8 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 
 	result = -1;
 
+	printf("Trying to create socket on fd = %d.\n", fd);
+
 	// create the socket
 	new_socket = socket(family, socktype, protocol);
 
@@ -82,6 +85,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 		if (new_socket == fd)
 		{
 			result = 0; // ok
+			printf("socket creation ok!\n");
 		}
 		else
 		{
@@ -90,6 +94,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 			if (dup2(new_socket, fd) != -1)
 			{	
 				result = 0; // ok
+				printf("socket creation ok!\n");
 			}
 
 			// ... and close the original file descriptor

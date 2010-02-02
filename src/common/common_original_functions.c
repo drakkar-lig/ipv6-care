@@ -219,6 +219,17 @@ int original_getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	return result;
 }
 
+int original_getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen)
+{
+	int result;
+
+	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(getsockopt),
+					ARGS(sockfd, level, optname, optval, optlen),
+					RETURN_VALUE_IF_FAILURE(-1),
+					RESULT(result));
+	return result;
+}
+
 in_addr_t original_inet_addr(const char *cp)
 {
 	in_addr_t result;
