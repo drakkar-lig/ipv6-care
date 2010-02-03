@@ -298,7 +298,7 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 			if (FD_ISSET(fd, final_fds))
 			{
 				initial_socket = get_initial_socket_for_created_socket(fd);
-				if (initial_socket == -1)
+				if (initial_socket < 0)
 				{	// fd has no corresponding initial_socket
 					FD_SET(fd, &resulting_initial_fds);
 				}
@@ -377,7 +377,7 @@ void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct poll
 		{
 			fd = final_fds[index].fd;
 			initial_socket = get_initial_socket_for_created_socket(fd);
-			if (initial_socket != -1)
+			if (initial_socket >= 0)
 			{	// fd was created by IPv6 CARE, set the flags on the initial socket
 
 				// first, find where is this initial socket in the table

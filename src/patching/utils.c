@@ -32,10 +32,18 @@ Etienne DUBLE 	-3.0:	Creation
 
 #include "socket_info.h"
 
-void copy_sockaddr_to_psa(struct sockaddr *address, int address_len, struct polymorphic_sockaddr *psa)
+#define _MIN(a, b) ((a<b)?a:b)
+
+void copy_sockaddr_to_psa(struct sockaddr *address, unsigned int address_len, struct polymorphic_sockaddr *psa)
 {
 	memcpy(&psa->sockaddr.sa, address, address_len);
 	psa->sa_len = address_len;
+}
+
+void copy_psa_to_sockaddr(struct polymorphic_sockaddr *psa, struct sockaddr *address, unsigned int *address_len)
+{
+	memcpy(address, &psa->sockaddr.sa, _MIN(*address_len, psa->sa_len));
+	*address_len = psa->sa_len;
 }
 
 void copy_ipv4_addr_to_pa(struct in_addr *address, struct polymorphic_addr *pa)
@@ -50,6 +58,39 @@ void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa)
 	memcpy(&pa->addr.ipv6_addr, address, sizeof(pa->addr.ipv6_addr));
 	pa->addr_len = sizeof(pa->addr.ipv6_addr);
 	pa->family = AF_INET6;
+}
+
+void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, struct polymorphic_sockaddr *psa)
+{
+	memset(psa, 0, sizeof(struct polymorphic_sockaddr));
+	if (pa->family == AF_INET)
+	{
+		psa->sa_len = sizeof(psa->sockaddr.sa_in);
+		psa->sockaddr.sa.sa_family = AF_INET;
+		psa->sockaddr.sa_in.sin_port = port;
+		memcpy(&psa->sockaddr.sa_in.sin_addr, &pa->addr.ipv4_addr, sizeof(psa->sockaddr.sa_in.sin_addr));
+	}
+	else // AF_INET6
+	{
+		psa->sa_len = sizeof(psa->sockaddr.sa_in6);
+		psa->sockaddr.sa.sa_family = AF_INET6;
+		psa->sockaddr.sa_in6.sin6_port = port;
+		memcpy(&psa->sockaddr.sa_in6.sin6_addr, &pa->addr.ipv6_addr, sizeof(psa->sockaddr.sa_in6.sin6_addr));
+	}
+}
+
+void copy_ipv4_addr_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa)
+{
+	struct polymorphic_addr pa;
+	copy_ipv4_addr_to_pa(ipv4_addr, &pa);
+	copy_pa_and_port_to_psa(&pa, port, psa);
+}
+
+void copy_ipv6_addr_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa)
+{
+	struct polymorphic_addr pa;
+	copy_ipv6_addr_to_pa(ipv6_addr, &pa);
+	copy_pa_and_port_to_psa(&pa, port, psa);
 }
 
 #define GET_SIZE_NEEDED(type, name) 	((strlen(name) + 1) * sizeof(char) +		\

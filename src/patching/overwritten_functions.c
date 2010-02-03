@@ -42,6 +42,7 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 #include "family.h"
 #include "utils.h"
 #include "addresses_and_names.h"
+#include "created_sockets.h"
 
 extern int h_errno;
 
@@ -51,8 +52,10 @@ extern int h_errno;
 int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
-	int new_socket_created, resulting_socket;
+	int new_socket_created, resulting_socket, communication_socket, 
+		got_connection_on_a_created_socket;
 
+	got_connection_on_a_created_socket = 0;
 	resulting_socket = socket; // default
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
@@ -63,10 +66,29 @@ int accept(int socket, struct sockaddr *address,
 		{
 			// wait on the two file descriptors
 			resulting_socket = wait_on_two_sockets(socket, new_socket_created);
+
+			if (resulting_socket == new_socket_created)
+			{
+				got_connection_on_a_created_socket = 1;
+			}
 		}
 	}
 
-	return original_accept(resulting_socket, address, address_len);
+	communication_socket = original_accept(resulting_socket, address, address_len);
+
+	if (communication_socket != -1)
+	{
+		if (got_connection_on_a_created_socket == 1)
+		{
+			register_created_socket(COMM_SOCKET_OF_A_CREATED_SOCKET, communication_socket);
+		}
+
+		register_socket_type(communication_socket, get_socket_type(resulting_socket));
+		register_socket_state(communication_socket, socket_state_communicating);
+		register_socket_protocol(communication_socket, get_socket_protocol(resulting_socket));
+	}
+
+	return communication_socket;
 }
 
 int bind(int socket, const struct sockaddr *address,
@@ -144,11 +166,64 @@ int getaddrinfo(const char *nodename,
 
 struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
-	struct hostent *result;
+	static struct hostent result;
+	static int buflen = 0;
+	static char *buf = NULL;
+	int done = 0;
+	struct hostent *function_result;
+	int error, gethostbyaddr_r_result;
 
-	result = original_gethostbyaddr(addr, len, type);
+	printf("in gethostbyaddr\n");
+	while(done == 0)
+	{
+		buflen += 10;
+		buflen *= 2;
+		buf = realloc(buf, buflen);
+		// call the modified gethostbyaddr_r function below
+		gethostbyaddr_r_result = gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &error);
+		if (gethostbyaddr_r_result == 0)
+		{
+			done = 1;
+		}
+		else
+		{
+			if (gethostbyaddr_r_result != ERANGE)
+			{
+				function_result = NULL;
+				done = 1;
+				h_errno = gethostbyaddr_r_result;
+			}
+		}
+	}
+
 //	record_hostent(result);
-	return result;
+	return function_result;
+}
+
+int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
+			struct hostent *ret, char *buf, size_t buflen,
+			struct hostent **result, int *h_errnop)
+{
+	struct ipv4_mapping_data *mapping_data;
+	const void *real_addr = addr;
+	socklen_t real_len = len;
+	int real_type = type;
+
+	printf("in gethostbyaddr_r\n");
+
+	if (type == AF_INET)
+	{
+		mapping_data = get_ipv4_mapping_for_mapped_ipv4_addr((struct in_addr *)addr);
+
+		if (mapping_data != NULL)
+		{
+			real_addr = &mapping_data->real_ipv6_addr;
+			real_len = sizeof(mapping_data->real_ipv6_addr);
+			real_type = AF_INET6;
+		}
+	}
+	
+	return original_gethostbyaddr_r(real_addr, real_len, real_type, ret, buf, buflen, result, h_errnop);
 }
 
 struct hostent *gethostbyname(const char *name)
@@ -244,7 +319,46 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	return original_getpeername(sockfd, addr, addrlen);
+	int initial_socket, original_getpeername_result;
+	struct polymorphic_sockaddr created_socket_psa, other_family_psa;
+	struct ipv4_mapping_data *mapping_data;
+	
+	if (test_if_fd_is_a_network_socket(sockfd) == 1)
+	{
+
+		initial_socket = get_initial_socket_for_created_socket(sockfd);
+		if (initial_socket == -1)
+		{	// sockfd was not created by IPv6 CARE
+			return original_getpeername(sockfd, addr, addrlen);
+		}
+		else
+		{	// sockfd was created by IPv6 CARE
+			created_socket_psa.sa_len = sizeof(created_socket_psa.sockaddr.sas);
+			original_getpeername_result = original_getpeername(sockfd, 
+						&created_socket_psa.sockaddr.sa, &created_socket_psa.sa_len);
+			if (original_getpeername_result == -1)
+			{
+				return -1;
+			}
+			else
+			{
+				// If the host as another address in the same family, return this one
+				if (get_equivalent_address(&created_socket_psa, &other_family_psa) != 0)
+				{	// otherwise get a mapping
+					mapping_data = get_ipv4_mapping_for_real_ipv6_addr(&created_socket_psa.sockaddr.sa_in6.sin6_addr);
+					copy_ipv4_addr_port_to_psa(&mapping_data->mapped_ipv4_addr, 
+								created_socket_psa.sockaddr.sa_in6.sin6_port, &other_family_psa);
+				}
+				// copy to arguments
+				copy_psa_to_sockaddr(&other_family_psa, addr, addrlen);
+				return 0;
+			}
+		}
+	}
+	else
+	{	// not a network socket
+		return original_getpeername(sockfd, addr, addrlen);
+	}
 }
 
 int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
@@ -257,6 +371,22 @@ in_addr_t inet_addr(const char *cp)
 	// TO DO:
 	// Check getnameinfo NI_NUMERIC_HOST, if it is IPv6 then record a mapping 
 	return original_inet_addr(cp);
+}
+
+char *inet_ntoa(struct in_addr in)
+{
+	struct ipv4_mapping_data *mapping_data;
+
+	mapping_data = get_ipv4_mapping_for_mapped_ipv4_addr(&in);
+
+	if (mapping_data != NULL)
+	{	// a mapping was registered, let's return the corresponding text form
+		return mapping_data->mapped_text_form;
+	}
+	else
+	{
+		return original_inet_ntoa(in);
+	}
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)

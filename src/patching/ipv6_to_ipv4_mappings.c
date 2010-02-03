@@ -74,7 +74,7 @@ void compute_mapped_text_form(struct in6_addr *real_ipv6_addr, char *mapped_text
 	{
 		mapped_text_form[0] = '.';
 		mapped_text_form[1] = '.';
-		strcpy(&mapped_text_form[2], &ipv6_string[strlen(ipv6_string) - MAX_IPV4_STRING_LENGTH +2]);
+		strcpy(&mapped_text_form[2], &ipv6_string[strlen(ipv6_string) - MAX_IPV4_STRING_LENGTH +3]);
 	}
 	else
 	{

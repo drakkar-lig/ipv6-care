@@ -28,7 +28,8 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __CREATED_SOCKETS_H__
 #define __CREATED_SOCKETS_H__
 
-#define INITIAL_SOCKET_WAS_CLOSED -1
+#define INITIAL_SOCKET_WAS_CLOSED -2
+#define COMM_SOCKET_OF_A_CREATED_SOCKET -3
 
 void register_created_socket(int initial_socket, int created_socket);
 int get_initial_socket_for_created_socket(int created_socket);

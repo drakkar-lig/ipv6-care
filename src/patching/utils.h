@@ -29,9 +29,13 @@ Etienne DUBLE 	-3.0:	Creation
 #define __UTILS_H__
 
 #include "socket_info.h"
-void copy_sockaddr_to_psa(struct sockaddr *address, int address_len, struct polymorphic_sockaddr *psa);
+void copy_sockaddr_to_psa(struct sockaddr *address, unsigned int address_len, struct polymorphic_sockaddr *psa);
+void copy_psa_to_sockaddr(struct polymorphic_sockaddr *psa, struct sockaddr *address, unsigned int *address_len);
 void copy_ipv4_addr_to_pa(struct in_addr *address, struct polymorphic_addr *pa);
 void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa);
+void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, struct polymorphic_sockaddr *psa);
+void copy_ipv4_addr_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa);
+void copy_ipv6_addr_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa);
 int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char *buf, size_t buflen, struct hostent *ret, 
 					int *h_errnop);
 #endif

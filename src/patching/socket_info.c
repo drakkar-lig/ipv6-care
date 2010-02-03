@@ -115,14 +115,14 @@ void compute_listening_socket_backlog (int fd __attribute__ ((unused)), struct s
 	data->data_per_state.listening.backlog = 128;
 }
 
-#define FLAG_DATA_SET_LOCAL_ADDRESS 		0x01
-#define FLAG_DATA_SET_REMOTE_ADDRESS 		0x02
-#define FLAG_DATA_SET_LISTENING_ADDRESS		0x04
-#define FLAG_DATA_SET_SOCKET_TYPE 		0x08
-#define FLAG_DATA_SET_SOCKET_PROTOCOL 		0x10
-#define FLAG_DATA_SET_SOCKET_BACKLOG 		0x20
-#define FLAG_DATA_SET_SOCKET_STATE 		0x40
-#define FLAG_DATA_SET_V6ONLY_OPTION		0x80
+#define FLAG_DATA_REGISTERED_LOCAL_ADDRESS 		0x01
+#define FLAG_DATA_REGISTERED_REMOTE_ADDRESS 		0x02
+#define FLAG_DATA_REGISTERED_LISTENING_ADDRESS		0x04
+#define FLAG_DATA_REGISTERED_SOCKET_TYPE 		0x08
+#define FLAG_DATA_REGISTERED_SOCKET_PROTOCOL 		0x10
+#define FLAG_DATA_REGISTERED_SOCKET_BACKLOG 		0x20
+#define FLAG_DATA_REGISTERED_SOCKET_STATE 		0x40
+#define FLAG_DATA_REGISTERED_V6ONLY_OPTION		0x80
 
 void compute_socket_state (int fd, struct socket_data *data)
 {
@@ -149,7 +149,7 @@ void compute_socket_state (int fd, struct socket_data *data)
 			memcpy (&data->data_per_state.communicating.remote_address, &sa,
 					sizeof (union u_sockaddr));
 			data->state = socket_state_communicating;
-			data->flag_data_registered |= FLAG_DATA_SET_REMOTE_ADDRESS;
+			data->flag_data_registered |= FLAG_DATA_REGISTERED_REMOTE_ADDRESS;
 		}
 	}
 }
@@ -196,37 +196,37 @@ _type get_ ## _suffix (int fd)								\
 }
 	
 
-#define indirection_in_set0	&
-#define indirection_in_set1
-#define indirection_in_set(_type_is_pointer)	indirection_in_set ## _type_is_pointer
+#define indirection_in_register0	&
+#define indirection_in_register1
+#define indirection_in_register(_type_is_pointer)	indirection_in_register ## _type_is_pointer
 
-#define __define_set_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)	\
-void register_ ## _suffix (int fd, _type value)						\
-{											\
-  struct socket_data *data;								\
-  data = get_socket_info (fd);								\
-  memcpy (	_data_pointer, 								\
-  		indirection_in_set(_type_is_pointer)value, 				\
-		sizeof (*(_data_pointer)));						\
-  data->flag_data_registered |= _flag;							\
+#define __define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)	\
+void register_ ## _suffix (int fd, _type value)							\
+{												\
+  struct socket_data *data;									\
+  data = get_socket_info (fd);									\
+  memcpy (	_data_pointer, 									\
+  		indirection_in_register(_type_is_pointer)value, 				\
+		sizeof (*(_data_pointer)));							\
+  data->flag_data_registered |= _flag;								\
 }
 
 
-#define __define_get_and_set_functions(_suffix, _type, _type_is_pointer, _flag, _data_pointer)  \
-__define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)		\
-__define_set_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)
+#define __define_get_and_register_functions(_suffix, _type, _type_is_pointer, _flag, _data_pointer)  	\
+__define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)				\
+__define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)
 
-__define_get_and_set_functions(socket_type, int, 0, FLAG_DATA_SET_SOCKET_TYPE, &data->type)
-__define_get_and_set_functions(socket_state, enum socket_state, 0, FLAG_DATA_SET_SOCKET_STATE, &data->state)
-__define_get_and_set_functions(socket_protocol, int, 0, FLAG_DATA_SET_SOCKET_PROTOCOL, &data->protocol)
-__define_get_and_set_functions(listening_socket_backlog, int, 0, FLAG_DATA_SET_SOCKET_BACKLOG, 
+__define_get_and_register_functions(socket_type, int, 0, FLAG_DATA_REGISTERED_SOCKET_TYPE, &data->type)
+__define_get_and_register_functions(socket_state, enum socket_state, 0, FLAG_DATA_REGISTERED_SOCKET_STATE, &data->state)
+__define_get_and_register_functions(socket_protocol, int, 0, FLAG_DATA_REGISTERED_SOCKET_PROTOCOL, &data->protocol)
+__define_get_and_register_functions(listening_socket_backlog, int, 0, FLAG_DATA_REGISTERED_SOCKET_BACKLOG, 
 						&data->data_per_state.listening.backlog)
-__define_get_and_set_functions(listening_socket_v6only_option, int, 0, FLAG_DATA_SET_V6ONLY_OPTION, 
+__define_get_and_register_functions(listening_socket_v6only_option, int, 0, FLAG_DATA_REGISTERED_V6ONLY_OPTION, 
 						&data->data_per_state.listening.v6only_option)
-__define_get_and_set_functions(listening_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_SET_LISTENING_ADDRESS, 
+__define_get_and_register_functions(listening_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_LISTENING_ADDRESS, 
 						&data->data_per_state.listening.address)
-__define_get_and_set_functions(local_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_SET_LOCAL_ADDRESS, 
+__define_get_and_register_functions(local_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_LOCAL_ADDRESS, 
 						&data->data_per_state.communicating.local_address)
-__define_get_and_set_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_SET_REMOTE_ADDRESS, 
+__define_get_and_register_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_REMOTE_ADDRESS, 
 						&data->data_per_state.communicating.remote_address)
 
