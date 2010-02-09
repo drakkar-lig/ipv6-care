@@ -30,7 +30,7 @@
 # Etienne DUBLE 	-2.5:	Removed variable log_all / option -o
 # Etienne DUBLE 	-2.5:	Variable PATCH_MODE_ENABLED
 
-PATCH_MODE_ENABLED=0
+PATCH_MODE_ENABLED=1
 
 # features supported by bash 2.05 and higher
 if [ ${BASH_VERSINFO[0]} -eq 2 ] && [[ ${BASH_VERSINFO[1]} > 04 ]] ||

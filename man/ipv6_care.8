@@ -14,7 +14,7 @@
 .\" See the License for the specific language governing permissions and 
 .\" limitations under the License.
 
-.TH ipv6_care 8 "December 10, 2009" "GNU/Linux"
+.TH ipv6_care 8 "February 9, 2010" "GNU/Linux"
 
 .\" disable hyphenation
 .ad l
@@ -29,18 +29,25 @@ check [-v] <program_command_line>		# -> check mode
 sh[ell] [-v]						# -> shell
 .br
 .B ipv6_care
+patch <program_command_line>			# -> EXPERIMENTAL patch mode
+.br
+.B ipv6_care
+system patch						# -> EXPERIMENTAL patch mode applied to all next programs started
+.br
+.B ipv6_care
 binary lookup <path_to_binary>		# -> self-diagnosis
 
 .SH DESCRIPTION
 .B IPv6 CARE 
-(\fBIPv6 C\fRompliance \fBA\fRutomatic \fBR\fRuntime \fBE\fRxperiment) is a toolbox easing IPv6 compliance diagnosis and migration of applications.
+(\fBIPv6 C\fRompliance \fBA\fRutomatic \fBR\fRuntime \fBE\fRnvironment) is a toolbox easing IPv6 compliance diagnosis and migration of applications.
 .PP
-The tool is able to monitor a process and detect the function calls related to IPv4 and IPv6 sockets. By analysing this calls the tool generates a detailed diagnosis about IPv6 compliance of this application. 
+It is able to correct the behavior of applications in order to make them IPv6 compliant ('patch' mode). Alternatively the tool can generate a detailed diagnosis about the IPv6 compliance of an application ('check' mode).
+It works by monitoring processes and detecting or patching the function calls related to IPv4 and IPv6 sockets. 
 .PP
 .B IPv6 CARE
 is using an \fBLD_PRELOAD\fR-based mechanism (see \fBld.so\fR(8)) in order to trap these function calls.
 .PP
-One of the following commands must be specified as a first parameter of the \fBipv6_care\fR tool:
+One of the following commands must be specified as the first parameters of the \fBipv6_care\fR tool:
 .PP
 - \fBcheck\fR:
 Run the specified program and diagnose its IPv6 compliance. 
@@ -48,13 +55,20 @@ Run the specified program and diagnose its IPv6 compliance.
 - \fBshell\fR:
 Enter a bash shell where all processes started will be checked.
 .PP
+- \fBpatch\fR:
+Run the specified program and patch it in order to make it IPv6 compliant. (This mode is EXPERIMENTAL)
+.PP
+- \fBsystem patch\fR:
+Apply the patch mode to all programs started from now on. (This mode is EXPERIMENTAL)
+.PP
 - \fBbinary lookup\fR:
 Check if the tool will work with the specified binary, and, if not, describe why. This is useful if IPv6 CARE seems not to work with a given program.
 
 
 .SH OPTIONS
 .B
-.IP -v
+.IP -v 
+(in check mode)
 This option will cause
 .B IPv6 CARE
 to display the function calls detected on standard output.
@@ -69,6 +83,27 @@ This will start the specified command '\fBtelnet www.google.fr 80\fR', report th
 .B ipv6_care shell
 .br
 This will start a bash session where IPv6 compliance of all started processes will be analysed.
+
+.PP
+(as root)
+.br
+.B ipv6_care patch
+service mysql start
+.br
+(as a standard user)
+.br
+.B ipv6_care patch
+mysql -h my_v6only_mysql_server -p
+.br
+This will start the mysql service and client and patch them in order to make them IPv6 compliant.
+
+.PP
+(as root)
+.br
+.B ipv6_care system patch
+; init 6
+.br
+This applies the patch mode and restarts the machine, which means that the patch mode will be applied to ALL programs launched at start up. Since the patch mode is experimental, this is VERY DANGEROUS!
 
 .PP
 .B ipv6_care binary lookup 
