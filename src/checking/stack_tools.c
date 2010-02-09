@@ -29,6 +29,7 @@ Etienne DUBLE 	-2.0:	Added warning about interpreted languages
 Etienne DUBLE 	-2.2:	system() -> run_command() => Disable LD_PRELOAD in the subprocesses
 Etienne DUBLE 	-2.2:	get_interpreter_name() -> save_interpreter_name()
 Etienne DUBLE 	-2.4:	Provide diagnostic if system command fails
+Etienne DUBLE   -3.0:   Avoid broken pipe errors (2>/dev/null for process before '|')
 
 */
 #include <stdio.h>
@@ -149,7 +150,8 @@ void write_stack_file(char *directory)
 	// - reformat the output
 	// - detect if source localisation was found or not (and in this case add a comment)
 	// - stops the stack after the function called 'main'.
-	append_to_string(&command, "; } | {	 printf \"%%110s\n\" \"\" | tr ' ' '@'; "
+	append_to_string(&command, "; } 2>/dev/null | {	 "
+						"printf \"%%110s\n\" \"\" | tr ' ' '@'; "
 						"echo \"One call was done at $(date +%%Hh%%Mmn%%Ss). Process function calls stack was:\"; "
 						"echo ;"
 						"printf \"%%-70s | %%s\n\" \"Function:\" \"Source file name and line number:\"; "

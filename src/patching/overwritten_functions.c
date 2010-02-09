@@ -46,6 +46,8 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 
 extern int h_errno;
 
+#define debug_print(...)
+
 // Start of the network-related functions overriden
 // ------------------------------------------------
 
@@ -64,6 +66,7 @@ int accept(int socket, struct sockaddr *address,
 
 		if (new_socket_created != -1)
 		{
+			debug_print(1, "Created a new listening socket in order to listen to both IPv4 and IPv6 clients.\n");
 			// wait on the two file descriptors
 			resulting_socket = wait_on_two_sockets(socket, new_socket_created);
 
@@ -116,6 +119,8 @@ int connect(int s, const struct sockaddr *address,
 	int result;
 	struct polymorphic_sockaddr original_psa, other_psa;
 	struct ipv4_mapping_data *mapping_data;
+	int connect_call_result, connect_call_errno;
+	int connect_call_other_family_result, connect_call_other_family_errno;
 
 	copy_sockaddr_to_psa((struct sockaddr *)address, address_len, &original_psa);
 
@@ -123,25 +128,36 @@ int connect(int s, const struct sockaddr *address,
 
 	if (mapping_data != NULL)
 	{
-		printf("found mapping.\n");
+		debug_print(1, "Trying to connect to an IPv6-only host...\n");
 		// this is the case when a host had only an IPv6 address and, during the name resolution
 		// phase, a mapping was set up. We will now try to connect to the original IPv6 address.
-		result = try_connect_using_ipv6_addr_of_mapping(s, &original_psa, mapping_data);
+		try_connect_using_ipv6_addr_of_mapping(s, &original_psa, mapping_data, 
+						&connect_call_result, &connect_call_errno);
 	}
 	else
 	{
 		// try to connect to the host specified
-		result = try_connect_and_register_connection(s, &original_psa);
+		result = try_connect_and_register_connection(s, &original_psa, 
+						&connect_call_result, &connect_call_errno);
 
 		if (		(result == -1)	&&
 				IS_AF_INET_OR_INET6(address->sa_family) &&
 				(get_equivalent_address(&original_psa, &other_psa) == 0))
 		{	// try to connect to the host specified using an address of the other family
-			result = try_connect_using_address_of_other_family(s, &other_psa);
+			debug_print(1, "Connection failed. But this host also as an address of the other family, trying it...\n");
+			result = try_connect_using_address_of_other_family(s, &other_psa,
+					&connect_call_other_family_result, &connect_call_other_family_errno);
+
+			if (result == 0) // result is better
+			{
+				connect_call_result = connect_call_other_family_result;
+				connect_call_errno = connect_call_other_family_errno;
+			}
 		}
 	}
 
-	return result;
+	errno = connect_call_errno;
+	return connect_call_result;
 }
 
 int getaddrinfo(const char *nodename,
@@ -166,21 +182,21 @@ int getaddrinfo(const char *nodename,
 
 struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
-	static struct hostent result;
-	static int buflen = 0;
-	static char *buf = NULL;
+	static __thread struct hostent result;
+	static __thread int buflen = 0;
+	static __thread char *buf = NULL;
 	int done = 0;
 	struct hostent *function_result;
-	int error, gethostbyaddr_r_result;
+	int gethostbyaddr_r_result;
 
-	printf("in gethostbyaddr\n");
+	debug_print(1, "in gethostbyaddr\n");
 	while(done == 0)
 	{
 		buflen += 10;
 		buflen *= 2;
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyaddr_r function below
-		gethostbyaddr_r_result = gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &error);
+		gethostbyaddr_r_result = gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &h_errno);
 		if (gethostbyaddr_r_result == 0)
 		{
 			done = 1;
@@ -191,7 +207,6 @@ struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 			{
 				function_result = NULL;
 				done = 1;
-				h_errno = gethostbyaddr_r_result;
 			}
 		}
 	}
@@ -209,7 +224,7 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 	socklen_t real_len = len;
 	int real_type = type;
 
-	printf("in gethostbyaddr_r\n");
+	debug_print(1, "in gethostbyaddr_r\n");
 
 	if (type == AF_INET)
 	{
@@ -217,6 +232,7 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 
 		if (mapping_data != NULL)
 		{
+			debug_print(1, "Retrieving hostname of an IPv6-only host...\n");
 			real_addr = &mapping_data->real_ipv6_addr;
 			real_len = sizeof(mapping_data->real_ipv6_addr);
 			real_type = AF_INET6;
@@ -228,20 +244,22 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 
 struct hostent *gethostbyname(const char *name)
 {
-	static struct hostent result;
-	static int buflen = 0;
-	static char *buf = NULL;
+	static __thread struct hostent result;
+	static __thread int buflen = 0;
+	static __thread char *buf = NULL;
 	int done = 0;
 	struct hostent *function_result;
-	int error, gethostbyname_r_result;
+	int gethostbyname_r_result;
 
 	while(done == 0)
 	{
 		buflen += 10;
 		buflen *= 2;
+		debug_print(1, "buflen = %d\n", buflen);
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyname_r function below
-		gethostbyname_r_result = gethostbyname_r(name, &result, buf, buflen, &function_result, &error);
+		gethostbyname_r_result = gethostbyname_r(name, &result, buf, buflen, &function_result, &h_errno);
+		debug_print(1, "gethostbyname_r returned: %d, %d, %d\n", gethostbyname_r_result, h_errno, errno);
 		if (gethostbyname_r_result == 0)
 		{
 			done = 1;
@@ -252,7 +270,6 @@ struct hostent *gethostbyname(const char *name)
 			{
 				function_result = NULL;
 				done = 1;
-				h_errno = gethostbyname_r_result;
 			}
 		}
 	}
@@ -265,38 +282,44 @@ int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
-	int function_result, address_conversion_result;
+	int function_result, saved_errno;
 	struct ipv4_mapping_data *mapping_data;
 	struct polymorphic_sockaddr psa;
 	struct polymorphic_addr pa;
 
 	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
-	if (function_result != 0)
+	saved_errno = errno;
+	debug_print(1, "original_gethostbyname_r returned: %d, %d, %d\n", function_result, *h_errnop, errno);
+	if ((result != NULL)&&(*result == NULL))
 	{
 		if (	(h_errnop != NULL)&& 
-			((*h_errnop == HOST_NOT_FOUND)||(*h_errnop == NO_ADDRESS)||(*h_errnop == NO_DATA)))
+			((*h_errnop == HOST_NOT_FOUND)||(*h_errnop == NO_ADDRESS)||
+			 (*h_errnop == NO_DATA)||(*h_errnop == NO_RECOVERY)))
 		{	// no IPv4 address was found, let's see if there is an IPv6 address
 
 			if (get_address_in_given_family((char *)name, AF_INET6, &psa) == 0)
 			{
+				debug_print(1, "Retrieving address of an IPv6-only host...\n");
 				// create a mapping with this IPv6 addr
 				mapping_data = get_ipv4_mapping_for_real_ipv6_addr(&psa.sockaddr.sa_in6.sin6_addr);
 
 				// format it as a hostent
 				copy_ipv4_addr_to_pa(&mapping_data->mapped_ipv4_addr, &pa);
-				address_conversion_result = convert_pa_and_name_to_hostent(&pa, (char *)name, buf, buflen, ret, h_errnop);
+				function_result = convert_pa_and_name_to_hostent(&pa, (char *)name, buf, buflen, ret);
 
-				if (address_conversion_result == -1)
-				{
-					function_result = *h_errnop;
-				}
-				else
+				if (function_result == 0)
 				{
 					*result = ret;
-					function_result = 0;
+					h_errno = NETDB_SUCCESS;
+					errno = 0;
 				}
 			}
 		}
+	}
+
+	if (function_result != 0)
+	{	// just in case it would have changed
+		errno = saved_errno;
 	}
 //	record_hostent(*result);
 	return function_result;
@@ -343,6 +366,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 			else
 			{
 				// If the host as another address in the same family, return this one
+				debug_print(1, "CHANGER CA ?...\n");
 				if (get_equivalent_address(&created_socket_psa, &other_family_psa) != 0)
 				{	// otherwise get a mapping
 					mapping_data = get_ipv4_mapping_for_real_ipv6_addr(&created_socket_psa.sockaddr.sa_in6.sin6_addr);
@@ -381,6 +405,7 @@ char *inet_ntoa(struct in_addr in)
 
 	if (mapping_data != NULL)
 	{	// a mapping was registered, let's return the corresponding text form
+		debug_print(1, "Retrieving abbreviated text-form of an IPv6 address...\n");
 		return mapping_data->mapped_text_form;
 	}
 	else

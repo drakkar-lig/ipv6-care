@@ -39,6 +39,8 @@ Etienne DUBLE 	-3.0:	Creation
 #include "socket_info.h"
 #include "created_sockets.h"
 
+#define debug_print(...)
+
 int reopen_socket_with_other_family(int s, int family)
 {
 	int type, protocol, result;
@@ -78,12 +80,22 @@ struct ipv4_mapping_data *get_mapping_data_if_host_is_ipv6_only(struct polymorph
 	return mapping_data;
 }
 
-int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa)
+int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa, 
+				int *connect_call_result, int *connect_call_errno)
 {
-	int result;
+	int result = 0;
 
 	// try to connect
-	result = original_connect(s, &psa->sockaddr.sa, psa->sa_len);
+	*connect_call_result = original_connect(s, &psa->sockaddr.sa, psa->sa_len);
+	*connect_call_errno = errno;
+
+	// EINPROGRESS means we have a non-blocking socket, so the call 
+	// returned before the connection was completed. We consider it is ok in this case.
+	if ((*connect_call_result == -1) && (*connect_call_errno != EINPROGRESS))
+	{
+		result = -1;
+	}
+
 	if (result == 0)
 	{
 		register_socket_state(s, socket_state_communicating);
@@ -91,13 +103,14 @@ int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa)
 	}
 	else
 	{
-		printf("connection failed: %s\n", strerror(errno));
+		debug_print(1, "connection failed: %s\n", strerror(errno));
 	}
 
 	return result;
 }
 
-int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *ipv4_psa, struct ipv4_mapping_data *mapping_data)
+int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *ipv4_psa, struct ipv4_mapping_data *mapping_data, 
+							int *connect_call_result, int *connect_call_errno)
 {
 	int result;
 	struct polymorphic_sockaddr ipv6_psa;
@@ -115,28 +128,30 @@ int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *i
 		ipv6_psa.sa_len = sizeof(ipv6_psa.sockaddr.sa_in6);
 	
 		// try to connect
-		result = try_connect_and_register_connection(s, &ipv6_psa);
+		result = try_connect_and_register_connection(s, &ipv6_psa, connect_call_result, connect_call_errno);
 		if (result == 0)
 		{
-			printf("connection ok!\n");
+			debug_print(1, "connection ok!\n");
 			register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
 		}
 		else
 		{	// reopen socket as initially
-			printf("connection failed. recreating socket as ipv4.\n");
+			debug_print(1, "connection failed. recreating socket as ipv4.\n");
 			reopen_socket_with_other_family(s, AF_INET);
 		}
 	}
 	else
 	{	// could not recreate the socket as AF_INET6
-		printf("could not reopen socket as IPv6.\n");
-		errno = EHOSTUNREACH;
+		debug_print(1, "could not reopen socket as IPv6.\n");
+		*connect_call_result = -1;
+		*connect_call_errno = EHOSTUNREACH;
 	}
 
 	return result;
 }
 
-int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr *psa)
+int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr *psa, 
+						int *connect_call_result, int *connect_call_errno)
 {
 	int result;
 	int save_errno;
@@ -147,7 +162,7 @@ int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr
 	if (reopen_socket_with_other_family(s, psa->sockaddr.sa.sa_family) == 0)
 	{	
 		// try to connect
-		result = try_connect_and_register_connection(s, psa);
+		result = try_connect_and_register_connection(s, psa, connect_call_result, connect_call_errno);
 		if (result == 0)
 		{
 			register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
@@ -161,6 +176,8 @@ int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr
 	if (result == -1)
 	{
 		errno = save_errno;
+		*connect_call_result = -1;
+		*connect_call_errno = save_errno;
 	}
 
 	return result;

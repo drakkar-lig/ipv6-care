@@ -42,6 +42,8 @@ Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 
 #define MAX_FREE_FILE_DESCRIPTORS	256
 
+#define debug_print(...)
+
 /*
 	Consider the following scenario:
 
@@ -75,7 +77,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 
 	result = -1;
 
-	printf("Trying to create socket on fd = %d.\n", fd);
+	debug_print(1, "Trying to create socket on fd = %d.\n", fd);
 
 	// create the socket
 	new_socket = socket(family, socktype, protocol);
@@ -85,7 +87,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 		if (new_socket == fd)
 		{
 			result = 0; // ok
-			printf("socket creation ok!\n");
+			debug_print(1, "socket creation ok!\n");
 		}
 		else
 		{
@@ -94,7 +96,7 @@ int create_socket_on_specified_free_fd(int fd, int family, int socktype, int pro
 			if (dup2(new_socket, fd) != -1)
 			{	
 				result = 0; // ok
-				printf("socket creation ok!\n");
+				debug_print(1, "socket creation ok!\n");
 			}
 
 			// ... and close the original file descriptor
@@ -263,6 +265,8 @@ void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *fin
 					{	// a new socket was created, add it in the final_fds
 						FD_SET(created_socket, final_fds);
 
+						debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
+
 						// update nfds if needed
 						if (created_socket >= *nfds)
 						{
@@ -344,7 +348,8 @@ void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct po
 			created_socket = get_additional_listening_socket_if_needed(fd);
 			if (created_socket != -1)
 			{	// a new socket was created, add it in the final_fds
-				
+				debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
+
 				// enlarge the table if needed
 				if (new_nfds == allocated)
 				{

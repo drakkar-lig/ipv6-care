@@ -37,7 +37,7 @@
 # Etienne DUBLE 	-2.5:	Variable PATCH_MODE_ENABLED
 # 
 
-PATCH_MODE_ENABLED=1
+PATCH_MODE_ENABLED=0
 
 # update the COLUMNS variable
 COLUMNS=$(tput cols)

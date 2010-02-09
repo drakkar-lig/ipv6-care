@@ -31,6 +31,8 @@ Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include "common_original_functions.h"
 #include "socket_info.h"
@@ -64,6 +66,7 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 		
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = OTHER_FAMILY(data->sockaddr.sa.sa_family);
+		hints.ai_socktype = SOCK_STREAM; // could also be SOCK_DGRAM, but needs to be initialized
 		result = original_getaddrinfo(host, service, &hints, &address_list);
 		if (result == 0)
 		{
@@ -85,7 +88,8 @@ int get_address_in_given_family(char *name, int family, struct polymorphic_socka
 
 	// getaddrinfo parameters
 	memset(&hints, 0, sizeof(hints));       // init
-	hints.ai_family = family;             // find ipv6 addresses
+	hints.ai_family = family;
+	hints.ai_socktype = SOCK_STREAM; // could also be SOCK_DGRAM, but needs to be initialized
 
 	getaddrinfo_result = original_getaddrinfo(name, NULL, &hints, &address_list);
 	paddress = address_list;

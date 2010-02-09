@@ -111,8 +111,7 @@ void copy_ipv6_addr_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, s
 					}
 				
 
-int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char *buf, size_t buflen, struct hostent *ret, 
-					int *h_errnop)
+int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char *buf, size_t buflen, struct hostent *ret)
 {
 	unsigned int size_needed;
 	int result, family;
@@ -132,8 +131,7 @@ int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char
 
 	if (buflen < size_needed)
 	{
-		result = -1;
-		*h_errnop = ERANGE;
+		result = ERANGE;
 	}
 	else
 	{
@@ -166,3 +164,18 @@ int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char
 	return result;
 }
 
+/*
+convert_ipv6_addresses_in_hostent(char *buf, size_t buflen, struct hostent *ret)
+{
+	char *temp_buf;
+
+	temp_buf = (char *)malloc(buflen);
+
+
+
+	// copy back to buf
+	memcpy(buf, temp_buf, buflen);
+
+	free(temp_buf);
+}
+*/

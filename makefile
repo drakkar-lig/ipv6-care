@@ -34,7 +34,7 @@
 # Etienne DUBLE 	-2.5:	Compression of man page at install
 # Etienne DUBLE 	-3.0:	Disable system patch mode at install/uninstall (if enabled)
 
-VERSION=3.0-alpha2
+VERSION=2.5
 
 PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)
@@ -64,7 +64,7 @@ clean:
 	rm -rf out 
 
 install:
-	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload | wc -l)" -gt 0 ] ; \
+	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload 2>/dev/null | wc -l)" -gt 0 ] ; \
 	 then 	ipv6_care system patch; \
 	 fi
 	@cp -f scripts/ipv6_care /usr/bin/
@@ -79,7 +79,7 @@ install:
 	@echo "install done."
 
 uninstall:
-	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload | wc -l)" -gt 0 ] ; \
+	@if [ "$$(grep "libipv6_care_patching" /etc/ld.so.preload 2>/dev/null | wc -l)" -gt 0 ] ; \
 	 then 	ipv6_care system patch >/dev/null; \
 	 fi
 	@rm -f /usr/bin/ipv6_care
@@ -104,12 +104,12 @@ endef
 
 binary_package: /tmp/$(PACKAGE_NAME)-bin-$(ARCHITECTURE).tar.gz
 
-/tmp/%-$(ARCHITECTURE).tar.gz: out/libipv6_care_checking.so out/libipv6_care_patching.so scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE
+/tmp/%-$(ARCHITECTURE).tar.gz: out/libipv6_care_checking.so out/libipv6_care_patching.so scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE man/*
 	@$(package_creation)
 
 source_package: /tmp/$(PACKAGE_NAME)-src.tar.gz
 
-/tmp/%.tar.gz: src/*/*.c src/*/*.h scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE
+/tmp/%.tar.gz: src/*/*.c src/*/*.h scripts/ipv6_care scripts/IPv6_CARE_*.sh makefile scripts/complete.sh README LICENSE man/*
 	@$(package_creation)
 
 -include out/*/*.d
