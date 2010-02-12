@@ -65,23 +65,31 @@ Etienne DUBLE 	- 3.0: 	Creation
 #define GET_SYMBOL_COUNT_ARGS(...)	get_symbol(PP_NARG(__VA_ARGS__), __VA_ARGS__) 
 #define RESULT(x)	x
 
+#define stringified(x) #x
+
+// the construction with 'static' below is an optimisation which avoids
+// to look several times for the same symbol.
+
+#define __DEFINE_ORIGINAL_SYMBOL(__symbol_variable, __func_name, ...)					\
+													\
+	static typeof(__func_name) *__symbol_variable = NULL;						\
+													\
+	if (__symbol_variable == NULL)									\
+	{												\
+		__symbol_variable = (typeof(__func_name)*)						\
+			GET_SYMBOL_COUNT_ARGS((char *) stringified(__func_name), ##__VA_ARGS__);	\
+	}
+
 /*
- * Please first look at the file overwritten_function.c to understand 
+ * Please first look at the file common_original_functions.c to understand 
  * how __CALL_ORIGINAL_FUNCTION is used. 
  * 
  * __CALL_ORIGINAL_FUNCTION calls the original function (of the standard libc).
  */
-
-#define stringified(x) #x
-
 #define __CALL_ORIGINAL_FUNCTION(__func_name, 					\
 		__func_args, __func_return_value_if_error, __result, ...)	\
 										\
-	typeof(__func_name) *p_original_func;					\
-										\
-	p_original_func = (typeof(p_original_func))				\
-		GET_SYMBOL_COUNT_ARGS(						\
-			(char *) stringified(__func_name), ##__VA_ARGS__); 	\
+	__DEFINE_ORIGINAL_SYMBOL(p_original_func, __func_name, ##__VA_ARGS__)	\
 	if (p_original_func != NULL) 						\
 	{									\
 		__result = p_original_func __func_args;				\
@@ -94,11 +102,7 @@ Etienne DUBLE 	- 3.0: 	Creation
 #define __CALL_ORIGINAL_FUNCTION_RETURNING_VOID(__func_name, 			\
 		__func_args, ...)						\
 										\
-	typeof(__func_name) *p_original_func;					\
-										\
-	p_original_func = (typeof(p_original_func))				\
-		GET_SYMBOL_COUNT_ARGS(						\
-			(char *) stringified(__func_name), ##__VA_ARGS__); 	\
+	__DEFINE_ORIGINAL_SYMBOL(p_original_func, __func_name, ##__VA_ARGS__)	\
 	if (p_original_func != NULL) 						\
 	{									\
 		p_original_func __func_args;					\

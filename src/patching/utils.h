@@ -28,13 +28,19 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include "socket_info.h"
+#include <netdb.h>
+
+#include "address.h"
 void copy_sockaddr_to_psa(struct sockaddr *address, unsigned int address_len, struct polymorphic_sockaddr *psa);
 void copy_psa_to_sockaddr(struct polymorphic_sockaddr *psa, struct sockaddr *address, unsigned int *address_len);
+int get_port_from_psa(struct polymorphic_sockaddr *psa);
+void set_port_in_psa(struct polymorphic_sockaddr *psa, int port);
 void copy_ipv4_addr_to_pa(struct in_addr *address, struct polymorphic_addr *pa);
 void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa);
+int compare_pa(struct polymorphic_addr *pa1, struct polymorphic_addr *pa2);
+void copy_psa_to_pa(struct polymorphic_sockaddr *psa, struct polymorphic_addr *pa);
 void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, struct polymorphic_sockaddr *psa);
-void copy_ipv4_addr_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa);
-void copy_ipv6_addr_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa);
+void copy_ipv4_addr_and_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa);
+void copy_ipv6_addr_and_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa);
 int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char *buf, size_t buflen, struct hostent *ret);
 #endif

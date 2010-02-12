@@ -46,6 +46,30 @@ void copy_psa_to_sockaddr(struct polymorphic_sockaddr *psa, struct sockaddr *add
 	*address_len = psa->sa_len;
 }
 
+int get_port_from_psa(struct polymorphic_sockaddr *psa)
+{
+	if (psa->sockaddr.sa.sa_family == AF_INET)
+	{
+		return psa->sockaddr.sa_in.sin_port;
+	}
+	else
+	{
+		return psa->sockaddr.sa_in6.sin6_port;
+	}
+}
+
+void set_port_in_psa(struct polymorphic_sockaddr *psa, int port)
+{
+	if (psa->sockaddr.sa.sa_family == AF_INET)
+	{
+		psa->sockaddr.sa_in.sin_port = port;
+	}
+	else
+	{
+		psa->sockaddr.sa_in6.sin6_port = port;
+	}
+}
+
 void copy_ipv4_addr_to_pa(struct in_addr *address, struct polymorphic_addr *pa)
 {
 	memcpy(&pa->addr.ipv4_addr, address, sizeof(pa->addr.ipv4_addr));
@@ -58,6 +82,37 @@ void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa)
 	memcpy(&pa->addr.ipv6_addr, address, sizeof(pa->addr.ipv6_addr));
 	pa->addr_len = sizeof(pa->addr.ipv6_addr);
 	pa->family = AF_INET6;
+}
+
+int compare_pa(struct polymorphic_addr *pa1, struct polymorphic_addr *pa2)
+{
+	if (pa1->family != pa2->family)
+	{
+		return (pa1->family < pa2->family);
+	}
+	else
+	{
+		if (pa1->family == AF_INET)
+		{
+			return (pa1->addr.ipv4_addr.s_addr < pa2->addr.ipv4_addr.s_addr);
+		}
+		else
+		{
+			return memcmp(pa1->addr.ipv6_addr.s6_addr, pa2->addr.ipv6_addr.s6_addr, sizeof(pa1->addr.ipv6_addr.s6_addr));
+		}
+	}
+}
+
+void copy_psa_to_pa(struct polymorphic_sockaddr *psa, struct polymorphic_addr *pa)
+{
+	if (psa->sockaddr.sa.sa_family == AF_INET)
+	{
+		copy_ipv4_addr_to_pa(&psa->sockaddr.sa_in.sin_addr, pa);
+	}
+	else
+	{
+		copy_ipv6_addr_to_pa(&psa->sockaddr.sa_in6.sin6_addr, pa);
+	}
 }
 
 void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, struct polymorphic_sockaddr *psa)
@@ -79,14 +134,14 @@ void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, str
 	}
 }
 
-void copy_ipv4_addr_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa)
+void copy_ipv4_addr_and_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa)
 {
 	struct polymorphic_addr pa;
 	copy_ipv4_addr_to_pa(ipv4_addr, &pa);
 	copy_pa_and_port_to_psa(&pa, port, psa);
 }
 
-void copy_ipv6_addr_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa)
+void copy_ipv6_addr_and_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa)
 {
 	struct polymorphic_addr pa;
 	copy_ipv6_addr_to_pa(ipv6_addr, &pa);

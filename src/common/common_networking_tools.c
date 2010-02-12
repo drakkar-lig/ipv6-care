@@ -28,6 +28,8 @@ Etienne DUBLE 	-3.0:	Creation
 #include <stdio.h>
 #include <sys/socket.h>
 
+#include "common_original_functions.h"
+
 // These functions are useful for networking operations
 // ----------------------------------------------------
 
@@ -39,7 +41,7 @@ int test_if_fd_is_a_network_socket(int fd)
 	unsigned int size = sizeof(sas);
 	struct sockaddr *sa = (struct sockaddr *)&sas;
 
-	if(getsockname(fd, sa, &size) == -1)
+	if(original_getsockname(fd, sa, &size) == -1)
 	{
 		return -1;
 	}

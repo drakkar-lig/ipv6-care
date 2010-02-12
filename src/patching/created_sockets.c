@@ -106,3 +106,17 @@ int get_initial_socket_for_created_socket(int created_socket)
 	return result;
 }
 
+void free_created_socket_data(int created_socket)
+{
+	struct created_socket_entry *entry;
+
+	for (entry = created_socket_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	{
+		if (entry->data.created_socket == created_socket)
+		{	
+			LIST_REMOVE(entry, entries);
+			free(entry);
+			break;
+		}
+	}
+}

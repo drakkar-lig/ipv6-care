@@ -39,16 +39,15 @@ Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 #include "family.h"
 #include "utils.h"
 #define MAX_HOST_SIZE	128
-#define MAX_SERV_SIZE	128
 
 int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic_sockaddr *new_data)
 {
 	int result;
-	char host[MAX_HOST_SIZE], service[MAX_SERV_SIZE];
+	char host[MAX_HOST_SIZE];
 	struct addrinfo hints, *address_list, *first_address;
 
 	// get the hostname
-	result = original_getnameinfo(&data->sockaddr.sa, data->sa_len, host, MAX_HOST_SIZE, service, MAX_SERV_SIZE, NI_NUMERICSERV);
+	result = original_getnameinfo(&data->sockaddr.sa, data->sa_len, host, MAX_HOST_SIZE, NULL, 0, NI_NUMERICSERV);
 	if (result == 0)
 	{
 		// get its IP of the other family
@@ -67,13 +66,13 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 		memset(&hints, 0, sizeof(hints));
 		hints.ai_family = OTHER_FAMILY(data->sockaddr.sa.sa_family);
 		hints.ai_socktype = SOCK_STREAM; // could also be SOCK_DGRAM, but needs to be initialized
-		result = original_getaddrinfo(host, service, &hints, &address_list);
+		result = original_getaddrinfo(host, NULL, &hints, &address_list);
 		if (result == 0)
 		{
 			first_address = address_list;
-			// copy data to pointer arguments
-			memcpy(&new_data->sockaddr.sa, first_address->ai_addr, first_address->ai_addrlen);
-			new_data->sa_len = first_address->ai_addrlen;
+			// copy address and port to new_data
+			copy_sockaddr_to_psa(first_address->ai_addr, first_address->ai_addrlen, new_data);
+			set_port_in_psa(new_data, get_port_from_psa(data));
 			// free the memory
 			original_freeaddrinfo(address_list);
 		}
@@ -81,10 +80,11 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 	return result;
 }
 
-int get_address_in_given_family(char *name, int family, struct polymorphic_sockaddr *psa)
+int get_address_in_given_family(char *name, int family, struct polymorphic_addr *pa)
 {
 	int result, getaddrinfo_result;
 	struct addrinfo hints, *address_list, *paddress;
+	struct polymorphic_sockaddr psa;
 
 	// getaddrinfo parameters
 	memset(&hints, 0, sizeof(hints));       // init
@@ -95,7 +95,8 @@ int get_address_in_given_family(char *name, int family, struct polymorphic_socka
 	paddress = address_list;
 	if (getaddrinfo_result == 0)
 	{
-		copy_sockaddr_to_psa(paddress->ai_addr, paddress->ai_addrlen, psa);
+		copy_sockaddr_to_psa(paddress->ai_addr, paddress->ai_addrlen, &psa);
+		copy_psa_to_pa(&psa, pa);
 
 		// free the list
 		original_freeaddrinfo(address_list);

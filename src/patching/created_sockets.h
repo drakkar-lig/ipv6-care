@@ -34,4 +34,5 @@ Etienne DUBLE 	-3.0:	Creation
 void register_created_socket(int initial_socket, int created_socket);
 int get_initial_socket_for_created_socket(int created_socket);
 int get_created_socket_for_initial_socket(int initial_socket);
+void free_created_socket_data(int created_socket);
 #endif

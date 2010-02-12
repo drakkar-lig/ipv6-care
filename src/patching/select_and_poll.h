@@ -18,44 +18,22 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-July 29, 2009.
+Nov 25, 2008.
 ---------------------------------------------------------------------
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
 
 */
-#ifndef __ADDRESS_H__
-#define __ADDRESS_H__
+#ifndef __SELECT_AND_POLL_H__
+#define __SELECT_AND_POLL_H__
 
-#include <netinet/in.h>
+#include <sys/select.h>
+#include <poll.h>
 
-union u_sockaddr
-{
-	struct sockaddr_storage sas;
-	struct sockaddr sa;
-	struct sockaddr_in sa_in;
-	struct sockaddr_in6 sa_in6;
-};
+void manage_socket_accesses_on_fdset(int *nfds, fd_set *fds, fd_set *final_fds);
+void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct pollfd *fds, struct pollfd **final_fds);
+void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds);
+void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct pollfd *initial_fds, struct pollfd *final_fds);
 
-struct polymorphic_sockaddr 
-{
-	union u_sockaddr sockaddr;
-	unsigned int sa_len;
-};
-
-union u_addr
-{
-	struct in_addr ipv4_addr;
-	struct in6_addr ipv6_addr;
-};
-
-struct polymorphic_addr 
-{
-	union u_addr addr;
-	unsigned int addr_len;
-	int family;
-};
-
-#endif 
-
+#endif

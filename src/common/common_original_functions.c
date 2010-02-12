@@ -336,17 +336,6 @@ int original_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorf
 	return result;
 }
 
-ssize_t original_read(int fd, void *buf, size_t count)
-{
-	ssize_t result;
-
-	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(read),
-					ARGS(fd, buf, count),
-					RETURN_VALUE_IF_FAILURE(-1),
-					RESULT(result));
-	return result;
-}
-
 int original_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
@@ -377,17 +366,6 @@ int original_socket(int domain, int type, int protocol)
 
 	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(socket),
 					ARGS(domain, type, protocol),
-					RETURN_VALUE_IF_FAILURE(-1),
-					RESULT(result));
-	return result;
-}
-
-ssize_t original_write(int fd, const void *buf, size_t count)
-{
-	ssize_t result;
-
-	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(write),
-					ARGS(fd, buf, count),
 					RETURN_VALUE_IF_FAILURE(-1),
 					RESULT(result));
 	return result;

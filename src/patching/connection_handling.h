@@ -28,12 +28,12 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __CONNECTION_HANDLING_H__
 #define __CONNECTION_HANDLING_H__
 
-struct ipv4_mapping_data *get_mapping_data_if_host_is_ipv6_only(struct polymorphic_sockaddr *psa);
+#include "address.h"
+
 int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa, 
 					int *connect_call_result, int *connect_call_errno);
-int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *ipv4_psa, struct ipv4_mapping_data *mapping_data,
-					int *connect_call_result, int *connect_call_errno);
-int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr *psa, 
-					int *connect_call_result, int *connect_call_errno);
+int try_connect_and_register_connection_and_manage_wrong_family(int s, 
+					int current_socket_family, struct polymorphic_sockaddr *psa,
+				        int *connect_call_result, int *connect_call_errno);
 
 #endif

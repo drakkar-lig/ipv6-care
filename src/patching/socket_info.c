@@ -33,6 +33,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <string.h>
 
 #include "address.h"
+#include "getxxxxname.h"
 #include "socket_info.h"
 #include "common_original_functions.h"
 
@@ -88,11 +89,26 @@ struct socket_data *get_socket_info (int fd)
 	return result;
 }
 
+void free_socket_info(int fd)
+{
+	struct socket_info_entry *entry;
+
+	for (entry = socket_info_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	{
+		if (entry->data.fd == fd)
+		{	
+			LIST_REMOVE(entry, entries);
+			free(entry);
+			break;
+		}
+	}
+}
+
 void compute_socket_type (int fd, struct socket_data *data)
 {
 	unsigned int socktype_size;
 	socktype_size = sizeof (data->type);
-	getsockopt (fd, 1, 3, (char *) &data->type, &socktype_size);
+	original_getsockopt (fd, 1, 3, (char *) &data->type, &socktype_size);
 }
 
 void compute_listening_socket_v6only_option (int fd, struct socket_data *data)
@@ -100,7 +116,7 @@ void compute_listening_socket_v6only_option (int fd, struct socket_data *data)
 	unsigned int sockoption_size;
 
 	sockoption_size = sizeof (data->data_per_state.listening.v6only_option);
-	getsockopt (fd, IPPROTO_IPV6, 26, (char *) &data->data_per_state.listening.v6only_option, &sockoption_size);
+	original_getsockopt (fd, IPPROTO_IPV6, 26, (char *) &data->data_per_state.listening.v6only_option, &sockoption_size);
 }
 
 void compute_socket_protocol (int fd __attribute__ ((unused)), struct socket_data *data)
@@ -117,12 +133,11 @@ void compute_listening_socket_backlog (int fd __attribute__ ((unused)), struct s
 
 #define FLAG_DATA_REGISTERED_LOCAL_ADDRESS 		0x01
 #define FLAG_DATA_REGISTERED_REMOTE_ADDRESS 		0x02
-#define FLAG_DATA_REGISTERED_LISTENING_ADDRESS		0x04
-#define FLAG_DATA_REGISTERED_SOCKET_TYPE 		0x08
-#define FLAG_DATA_REGISTERED_SOCKET_PROTOCOL 		0x10
-#define FLAG_DATA_REGISTERED_SOCKET_BACKLOG 		0x20
-#define FLAG_DATA_REGISTERED_SOCKET_STATE 		0x40
-#define FLAG_DATA_REGISTERED_V6ONLY_OPTION		0x80
+#define FLAG_DATA_REGISTERED_SOCKET_TYPE 		0x04
+#define FLAG_DATA_REGISTERED_SOCKET_PROTOCOL 		0x08
+#define FLAG_DATA_REGISTERED_SOCKET_BACKLOG 		0x10
+#define FLAG_DATA_REGISTERED_SOCKET_STATE 		0x20
+#define FLAG_DATA_REGISTERED_V6ONLY_OPTION		0x40
 
 void compute_socket_state (int fd, struct socket_data *data)
 {
@@ -154,8 +169,6 @@ void compute_socket_state (int fd, struct socket_data *data)
 	}
 }
 
-typedef int (*address_filling_function_t) (int, struct sockaddr *, socklen_t *);
-
 void fill_address (int fd, struct polymorphic_sockaddr *psa,
 	      address_filling_function_t function)
 {
@@ -163,19 +176,14 @@ void fill_address (int fd, struct polymorphic_sockaddr *psa,
 	function(fd, &psa->sockaddr.sa, &psa->sa_len);
 }
 
-void compute_listening_socket_address (int fd, struct socket_data *data)
-{
-	fill_address(fd, &data->data_per_state.listening.address, getsockname);
-}
-
 void compute_local_socket_address (int fd, struct socket_data *data)
 {
-	fill_address(fd, &data->data_per_state.communicating.local_address, getsockname);
+	fill_address(fd, &data->local_address, original_getsockname);
 }
 
 void compute_remote_socket_address (int fd, struct socket_data *data)
 {
-	fill_address(fd, &data->data_per_state.communicating.remote_address, getpeername);
+	fill_address(fd, &data->data_per_state.communicating.remote_address, original_getpeername);
 }
 
 #define indirection_in_get0	*
@@ -223,10 +231,8 @@ __define_get_and_register_functions(listening_socket_backlog, int, 0, FLAG_DATA_
 						&data->data_per_state.listening.backlog)
 __define_get_and_register_functions(listening_socket_v6only_option, int, 0, FLAG_DATA_REGISTERED_V6ONLY_OPTION, 
 						&data->data_per_state.listening.v6only_option)
-__define_get_and_register_functions(listening_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_LISTENING_ADDRESS, 
-						&data->data_per_state.listening.address)
 __define_get_and_register_functions(local_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_LOCAL_ADDRESS, 
-						&data->data_per_state.communicating.local_address)
+						&data->local_address)
 __define_get_and_register_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_REMOTE_ADDRESS, 
 						&data->data_per_state.communicating.remote_address)
 

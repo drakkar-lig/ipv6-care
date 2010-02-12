@@ -66,20 +66,6 @@ int reopen_socket_with_other_family(int s, int family)
 	return result;
 }
 
-struct ipv4_mapping_data *get_mapping_data_if_host_is_ipv6_only(struct polymorphic_sockaddr *psa)
-{
-	struct ipv4_mapping_data *mapping_data;
-
-	mapping_data = NULL;
-	
-	if (psa->sockaddr.sa.sa_family == AF_INET)
-	{
-		mapping_data = get_ipv4_mapping_for_mapped_ipv4_addr(&psa->sockaddr.sa_in.sin_addr);
-	}
-
-	return mapping_data;
-}
-
 int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa, 
 				int *connect_call_result, int *connect_call_errno)
 {
@@ -109,75 +95,38 @@ int try_connect_and_register_connection(int s, struct polymorphic_sockaddr *psa,
 	return result;
 }
 
-int try_connect_using_ipv6_addr_of_mapping(int s, struct polymorphic_sockaddr *ipv4_psa, struct ipv4_mapping_data *mapping_data, 
-							int *connect_call_result, int *connect_call_errno)
+int try_connect_and_register_connection_and_manage_wrong_family(int s, 
+				int current_socket_family, struct polymorphic_sockaddr *psa,
+                                int *connect_call_result, int *connect_call_errno)
 {
-	int result;
-	struct polymorphic_sockaddr ipv6_psa;
+	int result = -1;
 
-	result = -1;
-
-	if (reopen_socket_with_other_family(s, AF_INET6) == 0)
-	{	// fill a sockaddr structure with the ipv6 address
-		memset(&ipv6_psa.sockaddr.sa_in6, 0, sizeof(ipv6_psa.sockaddr.sa_in6));
-		ipv6_psa.sockaddr.sa_in6.sin6_family = AF_INET6;
-		ipv6_psa.sockaddr.sa_in6.sin6_port = ipv4_psa->sockaddr.sa_in.sin_port;
-		memcpy(&ipv6_psa.sockaddr.sa_in6.sin6_addr, &mapping_data->real_ipv6_addr, sizeof(ipv6_psa.sockaddr.sa_in6.sin6_addr));
-
-		// and get its length
-		ipv6_psa.sa_len = sizeof(ipv6_psa.sockaddr.sa_in6);
-	
-		// try to connect
-		result = try_connect_and_register_connection(s, &ipv6_psa, connect_call_result, connect_call_errno);
-		if (result == 0)
-		{
-			debug_print(1, "connection ok!\n");
-			register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
+	if (current_socket_family != psa->sockaddr.sa.sa_family)
+	{
+		if (reopen_socket_with_other_family(s, psa->sockaddr.sa.sa_family) == 0)
+		{ 	// try to connect
+			result = try_connect_and_register_connection(s, psa, connect_call_result, connect_call_errno);
+			if (result == 0)
+			{
+				debug_print(1, "connection ok!\n");
+				register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
+			}
+			else
+			{	// reopen socket as initially
+				debug_print(1, "connection failed. recreating socket as ipv4.\n");
+				reopen_socket_with_other_family(s, AF_INET);
+			}
 		}
 		else
-		{	// reopen socket as initially
-			debug_print(1, "connection failed. recreating socket as ipv4.\n");
-			reopen_socket_with_other_family(s, AF_INET);
+		{	// could not recreate the socket as AF_INET6
+			debug_print(1, "could not reopen socket as IPv6.\n");
+			*connect_call_result = -1;
+			*connect_call_errno = EHOSTUNREACH;
 		}
 	}
 	else
-	{	// could not recreate the socket as AF_INET6
-		debug_print(1, "could not reopen socket as IPv6.\n");
-		*connect_call_result = -1;
-		*connect_call_errno = EHOSTUNREACH;
-	}
-
-	return result;
-}
-
-int try_connect_using_address_of_other_family(int s, struct polymorphic_sockaddr *psa, 
-						int *connect_call_result, int *connect_call_errno)
-{
-	int result;
-	int save_errno;
-
-	save_errno = errno;
-	result = -1;
-
-	if (reopen_socket_with_other_family(s, psa->sockaddr.sa.sa_family) == 0)
-	{	
-		// try to connect
-		result = try_connect_and_register_connection(s, psa, connect_call_result, connect_call_errno);
-		if (result == 0)
-		{
-			register_created_socket(INITIAL_SOCKET_WAS_CLOSED, s);
-		}
-		else
-		{	// reopen socket as initially
-			reopen_socket_with_other_family(s, OTHER_FAMILY(psa->sockaddr.sa.sa_family));
-		}
-	}
-
-	if (result == -1)
 	{
-		errno = save_errno;
-		*connect_call_result = -1;
-		*connect_call_errno = save_errno;
+		result = try_connect_and_register_connection(s, psa, connect_call_result, connect_call_errno);
 	}
 
 	return result;

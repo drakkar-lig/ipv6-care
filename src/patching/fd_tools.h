@@ -28,27 +28,7 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __FD_TOOLS_H__
 #define __FD_TOOLS_H__
 
-#include <sys/select.h>
-#include <poll.h>
-
-#include "socket_info.h"
-
-enum list_of_fd_access_types {
-	eAccessType_Read,
-	eAccessType_Write,
-	eAccessType_Error,
-	eAccessType_Accept,
-	eAccessType_Connect
-};
-
 int create_socket_on_specified_free_fd(int fd, int family, int socktype, int protocol);
-int get_additional_listening_socket_if_needed(int initial_socket);
-int wait_on_two_sockets(int socket1, int socket2);
-int manage_socket_access_on_fd(enum list_of_fd_access_types access_type, int fd);
 void close_sockets_related_to_fd(int fd);
-void manage_socket_accesses_on_fdset(int *nfds, fd_set *fds, fd_set *final_fds);
-void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct pollfd *fds, struct pollfd **final_fds);
-void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final_fds);
-void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct pollfd *initial_fds, struct pollfd *final_fds);
 
 #endif

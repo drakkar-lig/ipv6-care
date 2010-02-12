@@ -18,44 +18,25 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-July 29, 2009.
+Fev 5, 2010.
 ---------------------------------------------------------------------
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
 
 */
-#ifndef __ADDRESS_H__
-#define __ADDRESS_H__
+#ifndef __IPV6_AWARE_OR_AGNOSTIC_H__
+#define __IPV6_AWARE_OR_AGNOSTIC_H__
 
-#include <netinet/in.h>
+#include "address.h"
 
-union u_sockaddr
+enum ipv6_aware_or_agnostic_conversions
 {
-	struct sockaddr_storage sas;
-	struct sockaddr sa;
-	struct sockaddr_in sa_in;
-	struct sockaddr_in6 sa_in6;
+	from_ipv6_agnostic_to_ipv6_aware,
+	from_ipv6_aware_to_ipv6_agnostic
 };
 
-struct polymorphic_sockaddr 
-{
-	union u_sockaddr sockaddr;
-	unsigned int sa_len;
-};
-
-union u_addr
-{
-	struct in_addr ipv4_addr;
-	struct in6_addr ipv6_addr;
-};
-
-struct polymorphic_addr 
-{
-	union u_addr addr;
-	unsigned int addr_len;
-	int family;
-};
-
-#endif 
-
+char *return_converted_text_ip(char *text_ip, enum ipv6_aware_or_agnostic_conversions conversion);
+struct polymorphic_addr *return_converted_pa(struct polymorphic_addr *pa, enum ipv6_aware_or_agnostic_conversions conversion);
+int fill_pa_given_an_ipv6_aware_text_ip(char *text_ip, struct polymorphic_addr *pa);
+#endif

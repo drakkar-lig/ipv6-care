@@ -32,121 +32,116 @@ Etienne DUBLE 	-3.0:	Creation
 #include <string.h>
 #include <arpa/inet.h>
 
+#include "common_original_functions.h"
 #include "ipv6_to_ipv4_mappings.h"
+#include "utils.h"
 
 #ifndef IPV4_MAPPING_PREFIX
 #define IPV4_MAPPING_PREFIX "10.133"
 #endif
 
-struct ipv4_mapping_entry {
-	struct ipv4_mapping_data data;
-	LIST_ENTRY(ipv4_mapping_entry) entries;
+struct mapping_entry {
+	struct mapping_data data;
+	LIST_ENTRY(mapping_entry) entries;
 };
 
-LIST_HEAD(ipv4_mapping_list_head_type, ipv4_mapping_entry) ipv4_mapping_list_head;
+LIST_HEAD(mapping_list_head_type, mapping_entry) mapping_list_head;
 
-int ipv4_mapping_list_initialised = 0;
-int ipv4_mapping_index = 0;
+int mapping_list_initialised = 0;
+int mapping_index = 0;
 
-void init_ipv4_mapping_list_if_needed()
+void init_mapping_list_if_needed()
 {
-	if (ipv4_mapping_list_initialised == 0)
+	if (mapping_list_initialised == 0)
 	{
-		LIST_INIT(&ipv4_mapping_list_head);
-		ipv4_mapping_list_initialised = 1;
+		LIST_INIT(&mapping_list_head);
+		mapping_list_initialised = 1;
 	}
 }
 
-void compute_mapped_ipv4_addr(struct in6_addr *real_ipv6_addr __attribute__ ((unused)), struct in_addr *mapped_ipv4_addr)
+void fill_mapping_data_for_ipv6_addr(struct polymorphic_addr *real_ipv6_pa, struct mapping_data *data)
 {
-	char ipv4_string[MAX_IPV4_STRING_LENGTH]; 
-	int my_index = ipv4_mapping_index++; // this is considered atomic (in a multi-threaded program)
-	// TO DO: check that we do not overflow (ipv4_mapping_index might be too high)
-	snprintf(ipv4_string, MAX_IPV4_STRING_LENGTH, "%s.%d.%d", IPV4_MAPPING_PREFIX, my_index / 256, my_index % 256);
-	inet_pton(AF_INET, ipv4_string, mapped_ipv4_addr);
-}
+	int my_index = mapping_index++; // this is considered atomic (in a multi-threaded program)
+	struct in_addr ipv4_addr;
+	int length;
 
-void compute_mapped_text_form(struct in6_addr *real_ipv6_addr, char *mapped_text_form)
-{
-	char ipv6_string[MAX_IPV6_STRING_LENGTH];
-	inet_ntop(AF_INET6, real_ipv6_addr, ipv6_string, MAX_IPV6_STRING_LENGTH);
-	if (strlen(ipv6_string) > MAX_IPV4_STRING_LENGTH -1)
+	my_index %= 256*256; // avoid overflows...
+
+	// pa[real_ipv6_addr]
+	memcpy(&data->pa[real_ipv6_addr], real_ipv6_pa, sizeof(*real_ipv6_pa));
+
+	// ip_text_forms[mapped_ipv4]
+	snprintf(data->ip_text_forms[mapped_ipv4], MAX_IPV4_STRING_LENGTH, 
+			"%s.%d.%d", IPV4_MAPPING_PREFIX, my_index / 256, my_index % 256);
+	// pa[mapped_ipv4_addr]
+	original_inet_pton(AF_INET, data->ip_text_forms[mapped_ipv4], &ipv4_addr);
+	copy_ipv4_addr_to_pa(&ipv4_addr, &data->pa[mapped_ipv4_addr]);
+
+	// ip_text_forms[full_ipv6]
+	original_inet_ntop(AF_INET6, &real_ipv6_pa->addr.ipv6_addr, data->ip_text_forms[full_ipv6], MAX_IPV6_STRING_LENGTH);
+
+	// ip_text_forms[abbreviated_ipv6]
+	if (strlen(data->ip_text_forms[full_ipv6]) > MAX_IPV4_STRING_LENGTH -1)
 	{
-		mapped_text_form[0] = '.';
-		mapped_text_form[1] = '.';
-		strcpy(&mapped_text_form[2], &ipv6_string[strlen(ipv6_string) - MAX_IPV4_STRING_LENGTH +3]);
+		data->ip_text_forms[abbreviated_ipv6][0] = '.';
+		data->ip_text_forms[abbreviated_ipv6][1] = '.';
+		length = strlen(data->ip_text_forms[full_ipv6]);
+		strcpy(&data->ip_text_forms[abbreviated_ipv6][2], &data->ip_text_forms[full_ipv6][length - MAX_IPV4_STRING_LENGTH +3]);
 	}
 	else
 	{
-		strcpy(mapped_text_form, ipv6_string);
+		strcpy(data->ip_text_forms[abbreviated_ipv6], data->ip_text_forms[full_ipv6]);
 	}
 }
 
-struct ipv4_mapping_data *get_ipv4_mapping_for_real_ipv6_addr(struct in6_addr *real_ipv6_addr)
+struct mapping_data *get_mapping_for_address(enum address_type_in_mapping type_of_address, struct polymorphic_addr *pa)
 {
-	struct ipv4_mapping_entry *entry;
-	struct ipv4_mapping_data *result;
+	struct mapping_entry *entry;
+	struct mapping_data *result;
 
-	init_ipv4_mapping_list_if_needed();
+	init_mapping_list_if_needed();
 	result = NULL;
 
-	for (entry = ipv4_mapping_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	for (entry = mapping_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
 	{
-		if (memcmp(&entry->data.real_ipv6_addr, real_ipv6_addr, sizeof(*real_ipv6_addr)) == 0)
+		if (compare_pa(&entry->data.pa[type_of_address], pa) == 0)
 		{
 			result = &entry->data;
 			break;
 		}
 	}
 
-	if (result == NULL)
+	if ((result == NULL)&&(type_of_address == real_ipv6_addr))
 	{
-		entry = malloc(sizeof(struct ipv4_mapping_entry));
+		entry = malloc(sizeof(struct mapping_entry));
 
-		memcpy(&entry->data.real_ipv6_addr, real_ipv6_addr, sizeof(*real_ipv6_addr));
-		compute_mapped_ipv4_addr(&entry->data.real_ipv6_addr, &entry->data.mapped_ipv4_addr);
-		compute_mapped_text_form(&entry->data.real_ipv6_addr, entry->data.mapped_text_form);
+		fill_mapping_data_for_ipv6_addr(pa, &entry->data);
 
-		LIST_INSERT_HEAD(&ipv4_mapping_list_head, entry, entries);
+		LIST_INSERT_HEAD(&mapping_list_head, entry, entries);
 		result = &entry->data;
 	}
-	return result;
-}
-
-struct ipv4_mapping_data *get_ipv4_mapping_for_mapped_ipv4_addr(struct in_addr *mapped_ipv4_addr)
-{
-	struct ipv4_mapping_entry *entry;
-	struct ipv4_mapping_data *result;
-
-	init_ipv4_mapping_list_if_needed();
-	result = NULL;
-
-	for (entry = ipv4_mapping_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
-	{
-		if (memcmp(&entry->data.mapped_ipv4_addr, mapped_ipv4_addr, sizeof(*mapped_ipv4_addr)) == 0)
-		{
-			result = &entry->data;
-			break;
-		}
-	}
 
 	return result;
 }
 
-struct ipv4_mapping_data *get_ipv4_mapping_for_mapped_text_form(char *mapped_text_form)
+struct mapping_data *get_mapping_for_text_form(char *text_form)
 {
-	struct ipv4_mapping_entry *entry;
-	struct ipv4_mapping_data *result;
+	struct mapping_entry *entry;
+	struct mapping_data *result;
 
-	init_ipv4_mapping_list_if_needed();
+	init_mapping_list_if_needed();
 	result = NULL;
+	int text_form_index;
 
-	for (entry = ipv4_mapping_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
+	for (entry = mapping_list_head.lh_first; entry != NULL; entry = entry->entries.le_next)
 	{
-		if (strncmp(entry->data.mapped_text_form, mapped_text_form, MAX_IPV4_STRING_LENGTH) == 0)
+		for (text_form_index = 0; text_form_index < number_of_mapped_ip_text_forms; text_form_index++)
 		{
-			result = &entry->data;
-			break;
+			if (strncmp(entry->data.ip_text_forms[text_form_index], text_form, MAX_IPV6_STRING_LENGTH) == 0)
+			{
+				result = &entry->data;
+				break;
+			}
 		}
 	}
 

@@ -28,18 +28,31 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __IPV6_TO_IPV4_MAPPINGS_H__
 #define __IPV6_TO_IPV4_MAPPINGS_H__
 
-#include <netinet/in.h>
+#include "address.h"
 
 #define MAX_IPV4_STRING_LENGTH 16	// ex: 155.133.253.142 + \0 -> 16 chars
 #define MAX_IPV6_STRING_LENGTH 40	// ex: 2001:2001:2001:2001:2001:2001:2001:2001 + \0 -> 40 chars
 
-struct ipv4_mapping_data {
-	struct in6_addr real_ipv6_addr;
-	struct in_addr	mapped_ipv4_addr;
-	char mapped_text_form[MAX_IPV4_STRING_LENGTH];
+enum mapped_ip_text_forms
+{
+	abbreviated_ipv6,
+	full_ipv6,
+	mapped_ipv4,
+	number_of_mapped_ip_text_forms
 };
 
-struct ipv4_mapping_data *get_ipv4_mapping_for_real_ipv6_addr(struct in6_addr *real_ipv6_addr);
-struct ipv4_mapping_data *get_ipv4_mapping_for_mapped_ipv4_addr(struct in_addr *mapped_ipv4_addr);
-struct ipv4_mapping_data *get_ipv4_mapping_for_mapped_text_form(char *mapped_text_form);
+enum address_type_in_mapping
+{
+	real_ipv6_addr, 
+	mapped_ipv4_addr,
+	number_of_address_types_in_mapping
+};
+
+struct mapping_data {
+	struct polymorphic_addr pa[number_of_address_types_in_mapping];
+	char ip_text_forms[number_of_mapped_ip_text_forms][MAX_IPV6_STRING_LENGTH];
+};
+
+struct mapping_data *get_mapping_for_address(enum address_type_in_mapping type_of_address, struct polymorphic_addr *pa);
+struct mapping_data *get_mapping_for_text_form(char *text_form);
 #endif

@@ -25,37 +25,11 @@ Last modifications:
 Etienne DUBLE 	-3.0:	Creation
 
 */
-#ifndef __ADDRESS_H__
-#define __ADDRESS_H__
+#ifndef __GETXXXXNAME_H__
+#define __GETXXXXNAME_H__
 
-#include <netinet/in.h>
+typedef int (*address_filling_function_t) (int, struct sockaddr *, socklen_t *);
 
-union u_sockaddr
-{
-	struct sockaddr_storage sas;
-	struct sockaddr sa;
-	struct sockaddr_in sa_in;
-	struct sockaddr_in6 sa_in6;
-};
+int getxxxxname(int sockfd, struct sockaddr *addr, socklen_t *addrlen, address_filling_function_t original_function);
 
-struct polymorphic_sockaddr 
-{
-	union u_sockaddr sockaddr;
-	unsigned int sa_len;
-};
-
-union u_addr
-{
-	struct in_addr ipv4_addr;
-	struct in6_addr ipv6_addr;
-};
-
-struct polymorphic_addr 
-{
-	union u_addr addr;
-	unsigned int addr_len;
-	int family;
-};
-
-#endif 
-
+#endif

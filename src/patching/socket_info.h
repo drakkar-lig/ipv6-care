@@ -33,13 +33,11 @@ Etienne DUBLE 	-3.0:	Creation
 struct socket_data_listening
 {
 	int backlog;
-	struct polymorphic_sockaddr address;
 	int v6only_option;
 };
 
 struct socket_data_communicating
 {
-	struct polymorphic_sockaddr local_address;
 	struct polymorphic_sockaddr remote_address;
 };
 
@@ -62,6 +60,7 @@ struct socket_data
 	int type;
 	int protocol;
 	enum socket_state state;
+	struct polymorphic_sockaddr local_address;
 	union u_socket_data_per_state data_per_state;
 	int flag_data_registered;
 };
@@ -72,8 +71,6 @@ enum socket_state get_socket_state(int fd);
 void register_socket_state(int fd, enum socket_state state);
 int get_socket_protocol(int fd);
 void register_socket_protocol(int fd, int protocol);
-struct polymorphic_sockaddr *get_listening_socket_address(int fd);
-void register_listening_socket_address(int fd, struct polymorphic_sockaddr *sa);
 int get_listening_socket_backlog(int fd);
 void register_listening_socket_backlog(int fd, int backlog);
 int get_listening_socket_v6only_option(int fd);
@@ -82,5 +79,6 @@ struct polymorphic_sockaddr *get_local_socket_address(int fd);
 void register_local_socket_address(int fd, struct polymorphic_sockaddr *sa);
 struct polymorphic_sockaddr *get_remote_socket_address(int fd);
 void register_remote_socket_address(int fd, struct polymorphic_sockaddr *sa);
+void free_socket_info(int fd);
 
 #endif

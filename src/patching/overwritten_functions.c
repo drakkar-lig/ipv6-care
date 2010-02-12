@@ -43,6 +43,10 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 #include "utils.h"
 #include "addresses_and_names.h"
 #include "created_sockets.h"
+#include "listening_sockets.h"
+#include "select_and_poll.h"
+#include "getxxxxname.h"
+#include "ipv6_aware_or_agnostic.h"
 
 extern int h_errno;
 
@@ -86,8 +90,8 @@ int accept(int socket, struct sockaddr *address,
 			register_created_socket(COMM_SOCKET_OF_A_CREATED_SOCKET, communication_socket);
 		}
 
-		register_socket_type(communication_socket, get_socket_type(resulting_socket));
 		register_socket_state(communication_socket, socket_state_communicating);
+		register_socket_type(communication_socket, get_socket_type(resulting_socket));
 		register_socket_protocol(communication_socket, get_socket_protocol(resulting_socket));
 	}
 
@@ -98,18 +102,29 @@ int bind(int socket, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
-	// TODO record_address(address);
+	struct polymorphic_sockaddr psa;
 
 	result = original_bind(socket, address, address_len);
+	if (result == 0)
+	{
+		copy_sockaddr_to_psa((struct sockaddr *)address, address_len, &psa);
+		register_local_socket_address(socket, &psa);
+	}
+
 	return result;
 }
 
 int close(int fd)
 {
 	int result;
-	close_sockets_related_to_fd(fd);
 
+	close_sockets_related_to_fd(fd);
 	result = original_close(fd);
+	if (result == 0)
+	{
+		free_created_socket_data(fd); // if fd was created by IPv6 CARE
+		free_socket_info(fd);
+	}
 	return result;
 }
 
@@ -117,46 +132,57 @@ int connect(int s, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
-	struct polymorphic_sockaddr original_psa, other_psa;
-	struct ipv4_mapping_data *mapping_data;
+	struct polymorphic_sockaddr original_psa, new_psa, other_psa, *succeeding_psa;
+	struct polymorphic_addr original_pa, *new_pa;
 	int connect_call_result, connect_call_errno;
 	int connect_call_other_family_result, connect_call_other_family_errno;
 
-	copy_sockaddr_to_psa((struct sockaddr *)address, address_len, &original_psa);
-
-	mapping_data = get_mapping_data_if_host_is_ipv6_only(&original_psa);
-
-	if (mapping_data != NULL)
+	if (IS_AF_INET_OR_INET6(address->sa_family))
 	{
-		debug_print(1, "Trying to connect to an IPv6-only host...\n");
-		// this is the case when a host had only an IPv6 address and, during the name resolution
-		// phase, a mapping was set up. We will now try to connect to the original IPv6 address.
-		try_connect_using_ipv6_addr_of_mapping(s, &original_psa, mapping_data, 
-						&connect_call_result, &connect_call_errno);
-	}
-	else
-	{
+		copy_sockaddr_to_psa((struct sockaddr *)address, address_len, &original_psa);
+		copy_psa_to_pa(&original_psa, &original_pa);
+
+		// convert to ipv6 aware data
+		new_pa = return_converted_pa(&original_pa, from_ipv6_agnostic_to_ipv6_aware);
+		copy_pa_and_port_to_psa(new_pa, get_port_from_psa(&original_psa), &new_psa);
+
 		// try to connect to the host specified
-		result = try_connect_and_register_connection(s, &original_psa, 
-						&connect_call_result, &connect_call_errno);
+		result = try_connect_and_register_connection_and_manage_wrong_family(s, 
+			original_pa.family, &new_psa, &connect_call_result, &connect_call_errno);
 
-		if (		(result == -1)	&&
+		succeeding_psa = &new_psa; // default
+
+		if (		(result == -1) &&
 				IS_AF_INET_OR_INET6(address->sa_family) &&
-				(get_equivalent_address(&original_psa, &other_psa) == 0))
+				(get_equivalent_address(&new_psa, &other_psa) == 0))
 		{	// try to connect to the host specified using an address of the other family
 			debug_print(1, "Connection failed. But this host also as an address of the other family, trying it...\n");
-			result = try_connect_using_address_of_other_family(s, &other_psa,
+			result = try_connect_and_register_connection_and_manage_wrong_family(s, 
+					original_pa.family, &other_psa,
 					&connect_call_other_family_result, &connect_call_other_family_errno);
 
 			if (result == 0) // result is better
 			{
 				connect_call_result = connect_call_other_family_result;
 				connect_call_errno = connect_call_other_family_errno;
+				succeeding_psa = &other_psa;
 			}
 		}
+
+		errno = connect_call_errno;
+
+		if (connect_call_result == 0)
+		{
+			register_socket_state(s, socket_state_communicating);
+			register_remote_socket_address(s, succeeding_psa);
+		}
+	}
+	else
+	{
+		connect_call_result = original_connect(s, address, address_len);
 	}
 
-	errno = connect_call_errno;
+
 	return connect_call_result;
 }
 
@@ -219,27 +245,20 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 			struct hostent *ret, char *buf, size_t buflen,
 			struct hostent **result, int *h_errnop)
 {
-	struct ipv4_mapping_data *mapping_data;
-	const void *real_addr = addr;
-	socklen_t real_len = len;
-	int real_type = type;
+	struct polymorphic_addr pa, *new_pa;
 
 	debug_print(1, "in gethostbyaddr_r\n");
-
 	if (type == AF_INET)
 	{
-		mapping_data = get_ipv4_mapping_for_mapped_ipv4_addr((struct in_addr *)addr);
-
-		if (mapping_data != NULL)
-		{
-			debug_print(1, "Retrieving hostname of an IPv6-only host...\n");
-			real_addr = &mapping_data->real_ipv6_addr;
-			real_len = sizeof(mapping_data->real_ipv6_addr);
-			real_type = AF_INET6;
-		}
+		copy_ipv4_addr_to_pa((struct in_addr *)addr, &pa);
+		new_pa = return_converted_pa(&pa, from_ipv6_agnostic_to_ipv6_aware);
+		return original_gethostbyaddr_r((const void *)&new_pa->addr, new_pa->addr_len, new_pa->family, 
+					ret, buf, buflen, result, h_errnop);
 	}
-	
-	return original_gethostbyaddr_r(real_addr, real_len, real_type, ret, buf, buflen, result, h_errnop);
+	else
+	{
+		return original_gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop);
+	}
 }
 
 struct hostent *gethostbyname(const char *name)
@@ -283,9 +302,7 @@ int gethostbyname_r(const char *name,
 		struct hostent **result, int *h_errnop)
 {
 	int function_result, saved_errno;
-	struct ipv4_mapping_data *mapping_data;
-	struct polymorphic_sockaddr psa;
-	struct polymorphic_addr pa;
+	struct polymorphic_addr pa, *new_pa;
 
 	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 	saved_errno = errno;
@@ -297,15 +314,13 @@ int gethostbyname_r(const char *name,
 			 (*h_errnop == NO_DATA)||(*h_errnop == NO_RECOVERY)))
 		{	// no IPv4 address was found, let's see if there is an IPv6 address
 
-			if (get_address_in_given_family((char *)name, AF_INET6, &psa) == 0)
+			if (get_address_in_given_family((char *)name, AF_INET6, &pa) == 0)
 			{
 				debug_print(1, "Retrieving address of an IPv6-only host...\n");
-				// create a mapping with this IPv6 addr
-				mapping_data = get_ipv4_mapping_for_real_ipv6_addr(&psa.sockaddr.sa_in6.sin6_addr);
+				new_pa = return_converted_pa(&pa, from_ipv6_aware_to_ipv6_agnostic);
 
 				// format it as a hostent
-				copy_ipv4_addr_to_pa(&mapping_data->mapped_ipv4_addr, &pa);
-				function_result = convert_pa_and_name_to_hostent(&pa, (char *)name, buf, buflen, ret);
+				function_result = convert_pa_and_name_to_hostent(new_pa, (char *)name, buf, buflen, ret);
 
 				if (function_result == 0)
 				{
@@ -342,76 +357,64 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	int initial_socket, original_getpeername_result;
-	struct polymorphic_sockaddr created_socket_psa, other_family_psa;
-	struct ipv4_mapping_data *mapping_data;
-	
-	if (test_if_fd_is_a_network_socket(sockfd) == 1)
-	{
-
-		initial_socket = get_initial_socket_for_created_socket(sockfd);
-		if (initial_socket == -1)
-		{	// sockfd was not created by IPv6 CARE
-			return original_getpeername(sockfd, addr, addrlen);
-		}
-		else
-		{	// sockfd was created by IPv6 CARE
-			created_socket_psa.sa_len = sizeof(created_socket_psa.sockaddr.sas);
-			original_getpeername_result = original_getpeername(sockfd, 
-						&created_socket_psa.sockaddr.sa, &created_socket_psa.sa_len);
-			if (original_getpeername_result == -1)
-			{
-				return -1;
-			}
-			else
-			{
-				// If the host as another address in the same family, return this one
-				debug_print(1, "CHANGER CA ?...\n");
-				if (get_equivalent_address(&created_socket_psa, &other_family_psa) != 0)
-				{	// otherwise get a mapping
-					mapping_data = get_ipv4_mapping_for_real_ipv6_addr(&created_socket_psa.sockaddr.sa_in6.sin6_addr);
-					copy_ipv4_addr_port_to_psa(&mapping_data->mapped_ipv4_addr, 
-								created_socket_psa.sockaddr.sa_in6.sin6_port, &other_family_psa);
-				}
-				// copy to arguments
-				copy_psa_to_sockaddr(&other_family_psa, addr, addrlen);
-				return 0;
-			}
-		}
-	}
-	else
-	{	// not a network socket
-		return original_getpeername(sockfd, addr, addrlen);
-	}
+	return getxxxxname(sockfd, addr, addrlen, original_getpeername);
 }
 
 int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	return original_getsockname(sockfd, addr, addrlen);
+	return getxxxxname(sockfd, addr, addrlen, original_getsockname);
 }
 
 in_addr_t inet_addr(const char *cp) 
 {
-	// TO DO:
-	// Check getnameinfo NI_NUMERIC_HOST, if it is IPv6 then record a mapping 
-	return original_inet_addr(cp);
+	in_addr_t result;
+	char *text_ip;
+	struct polymorphic_addr pa, *new_pa;
+
+	text_ip = return_converted_text_ip((char *)cp, from_ipv6_agnostic_to_ipv6_aware);
+	if (fill_pa_given_an_ipv6_aware_text_ip(text_ip, &pa) == 0)
+	{
+		new_pa = return_converted_pa(&pa, from_ipv6_aware_to_ipv6_agnostic);
+		result = new_pa->addr.ipv4_addr.s_addr;
+	}
+	else
+	{
+		result = INADDR_NONE;
+	}
+	return result;
 }
 
 char *inet_ntoa(struct in_addr in)
 {
-	struct ipv4_mapping_data *mapping_data;
+	struct polymorphic_addr pa;
+	struct mapping_data *mapping_data;
 
-	mapping_data = get_ipv4_mapping_for_mapped_ipv4_addr(&in);
+	copy_ipv4_addr_to_pa(&in, &pa);
+	mapping_data = get_mapping_for_address(mapped_ipv4_addr, &pa);
 
 	if (mapping_data != NULL)
 	{	// a mapping was registered, let's return the corresponding text form
 		debug_print(1, "Retrieving abbreviated text-form of an IPv6 address...\n");
-		return mapping_data->mapped_text_form;
+		return mapping_data->ip_text_forms[mapped_ipv4];
 	}
 	else
 	{
 		return original_inet_ntoa(in);
 	}
+}
+
+int listen(int sockfd, int backlog)
+{
+	int result;
+
+	result = original_listen(sockfd, backlog);
+	if ((test_if_fd_is_a_network_socket(sockfd) == 1) && (result == 0))
+	{
+		register_listening_socket_backlog(sockfd, backlog);
+		register_socket_state(sockfd, socket_state_listening);
+	}
+
+	return result;
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
@@ -476,17 +479,6 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return result;
 }
 
-ssize_t read(int fd, void *buf, size_t count)
-{
-	ssize_t result;
-	int final_fd;
-
-	final_fd = manage_socket_access_on_fd(eAccessType_Read, fd);
-
-	result = original_read(final_fd, buf, count);
-	return result;
-}
-
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
@@ -508,14 +500,18 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return result;
 }
 
-ssize_t write(int fd, const void *buf, size_t count)
+int socket(int domain, int type, int protocol)
 {
-	ssize_t result;
-	int final_fd;
+	int fd;
 
-	final_fd = manage_socket_access_on_fd(eAccessType_Write, fd);
+	fd = original_socket(domain, type, protocol);
+	if ((IS_AF_INET_OR_INET6(domain)) && (fd != -1))
+	{
+		register_socket_state(fd, socket_state_created);
+		register_socket_type(fd, type);
+		register_socket_protocol(fd, protocol);
+	}
 
-	result = original_write(final_fd, buf, count);
-	return result;
+	return fd;
 }
 

@@ -18,44 +18,17 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-July 29, 2009.
+Nov 25, 2008.
 ---------------------------------------------------------------------
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
 
 */
-#ifndef __ADDRESS_H__
-#define __ADDRESS_H__
+#ifndef __LISTENING_SOCKETS_H__
+#define __LISTENING_SOCKETS_H__
 
-#include <netinet/in.h>
+int get_additional_listening_socket_if_needed(int initial_socket);
+int wait_on_two_sockets(int socket1, int socket2);
 
-union u_sockaddr
-{
-	struct sockaddr_storage sas;
-	struct sockaddr sa;
-	struct sockaddr_in sa_in;
-	struct sockaddr_in6 sa_in6;
-};
-
-struct polymorphic_sockaddr 
-{
-	union u_sockaddr sockaddr;
-	unsigned int sa_len;
-};
-
-union u_addr
-{
-	struct in_addr ipv4_addr;
-	struct in6_addr ipv6_addr;
-};
-
-struct polymorphic_addr 
-{
-	union u_addr addr;
-	unsigned int addr_len;
-	int family;
-};
-
-#endif 
-
+#endif
