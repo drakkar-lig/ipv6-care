@@ -29,6 +29,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 
 #include "family.h"
@@ -38,14 +39,18 @@ Etienne DUBLE 	-3.0:	Creation
 #include "ipv6_to_ipv4_mappings.h"
 #include "socket_info.h"
 #include "created_sockets.h"
+#include "report_socket_options.h"
 
 #define debug_print(...)
 
 int reopen_socket_with_other_family(int s, int family)
 {
-	int type, protocol, result;
+	int type, protocol, result, saved_fd;
 
 	result = 0;
+
+	// duplicate the file descriptor
+	saved_fd = dup(s);
 
 	// record the type, protocol and fd of the existing socket
 	type = get_socket_type(s);
@@ -56,12 +61,18 @@ int reopen_socket_with_other_family(int s, int family)
 	original_close(s);
 
 	// create an IPv6 socket on the same file descriptor s
-
 	if (create_socket_on_specified_free_fd(s, family, type, protocol) == -1)
-	{	// failed ! recreate socket previously closed
-		create_socket_on_specified_free_fd(s, OTHER_FAMILY(family), type, protocol);
+	{	// failed ! recreate file descriptor previously closed
+		dup2(saved_fd, s);
 		result = -1;
 	}
+	else
+	{
+		report_socket_options(saved_fd, s);
+	}
+
+	// saved_fd is not useful anymore
+	original_close(saved_fd);
 
 	return result;
 }
@@ -100,6 +111,10 @@ int try_connect_and_register_connection_and_manage_wrong_family(int s,
                                 int *connect_call_result, int *connect_call_errno)
 {
 	int result = -1;
+	int saved_fd;
+
+	// duplicate the file descriptor
+	saved_fd = dup(s);
 
 	if (current_socket_family != psa->sockaddr.sa.sa_family)
 	{
@@ -114,7 +129,8 @@ int try_connect_and_register_connection_and_manage_wrong_family(int s,
 			else
 			{	// reopen socket as initially
 				debug_print(1, "connection failed. recreating socket as ipv4.\n");
-				reopen_socket_with_other_family(s, AF_INET);
+				original_close(s);
+				dup2(saved_fd, s);
 			}
 		}
 		else
@@ -128,6 +144,9 @@ int try_connect_and_register_connection_and_manage_wrong_family(int s,
 	{
 		result = try_connect_and_register_connection(s, psa, connect_call_result, connect_call_errno);
 	}
+
+	// saved_fd is not useful anymore
+	original_close(saved_fd);
 
 	return result;
 }

@@ -37,6 +37,44 @@ Etienne DUBLE 	-3.0:	Creation
 #include "socket_info.h"
 #include "common_original_functions.h"
 
+#define FLAG_DATA_REGISTERED_LOCAL_ADDRESS 		0x01
+#define FLAG_DATA_REGISTERED_REMOTE_ADDRESS 		0x02
+#define FLAG_DATA_REGISTERED_SOCKET_TYPE 		0x04
+#define FLAG_DATA_REGISTERED_SOCKET_PROTOCOL 		0x08
+#define FLAG_DATA_REGISTERED_SOCKET_BACKLOG 		0x10
+#define FLAG_DATA_REGISTERED_SOCKET_STATE 		0x20
+#define FLAG_DATA_REGISTERED_V6ONLY_OPTION		0x40
+#define FLAG_DATA_REGISTERED_BOUND_INTERFACE		0x80
+
+struct socket_data_listening
+{
+	int backlog;
+	int v6only_option;
+};
+
+struct socket_data_communicating
+{
+	struct polymorphic_sockaddr remote_address;
+};
+
+union u_socket_data_per_state
+{
+	struct socket_data_listening listening;
+	struct socket_data_communicating communicating;
+};
+
+struct socket_data
+{
+	int fd;
+	int type;
+	int protocol;
+	enum socket_state state;
+	struct polymorphic_sockaddr local_address;
+	union u_socket_data_per_state data_per_state;
+	int flag_data_registered;
+	struct ifreq bound_interface;
+};
+
 struct socket_info_entry {
        struct socket_data data;
        LIST_ENTRY(socket_info_entry) entries;
@@ -131,14 +169,6 @@ void compute_listening_socket_backlog (int fd __attribute__ ((unused)), struct s
 	data->data_per_state.listening.backlog = 128;
 }
 
-#define FLAG_DATA_REGISTERED_LOCAL_ADDRESS 		0x01
-#define FLAG_DATA_REGISTERED_REMOTE_ADDRESS 		0x02
-#define FLAG_DATA_REGISTERED_SOCKET_TYPE 		0x04
-#define FLAG_DATA_REGISTERED_SOCKET_PROTOCOL 		0x08
-#define FLAG_DATA_REGISTERED_SOCKET_BACKLOG 		0x10
-#define FLAG_DATA_REGISTERED_SOCKET_STATE 		0x20
-#define FLAG_DATA_REGISTERED_V6ONLY_OPTION		0x40
-
 void compute_socket_state (int fd, struct socket_data *data)
 {
 	unsigned int option_size, sas_size;
@@ -184,6 +214,12 @@ void compute_local_socket_address (int fd, struct socket_data *data)
 void compute_remote_socket_address (int fd, struct socket_data *data)
 {
 	fill_address(fd, &data->data_per_state.communicating.remote_address, original_getpeername);
+}
+
+void compute_bound_interface (int fd __attribute__ ((unused)), struct socket_data *data)
+{	// it seems that SO_BINDTODEVICE does not work with getsockopt
+	// so we have no way to retrieve this
+	memset(&data->bound_interface, 0, sizeof(data->bound_interface));
 }
 
 #define indirection_in_get0	*
@@ -235,4 +271,6 @@ __define_get_and_register_functions(local_socket_address, struct polymorphic_soc
 						&data->local_address)
 __define_get_and_register_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_REMOTE_ADDRESS, 
 						&data->data_per_state.communicating.remote_address)
+__define_get_and_register_functions(bound_interface, struct ifreq *, 1, FLAG_DATA_REGISTERED_BOUND_INTERFACE, 
+						&data->bound_interface)
 

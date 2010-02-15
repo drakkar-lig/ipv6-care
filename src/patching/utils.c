@@ -33,6 +33,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include "socket_info.h"
 
 #define _MIN(a, b) ((a<b)?a:b)
+#define _COMPARE(a, b) ((a<b)?1:((a==b)?0:-1))
 
 void copy_sockaddr_to_psa(struct sockaddr *address, unsigned int address_len, struct polymorphic_sockaddr *psa)
 {
@@ -88,13 +89,13 @@ int compare_pa(struct polymorphic_addr *pa1, struct polymorphic_addr *pa2)
 {
 	if (pa1->family != pa2->family)
 	{
-		return (pa1->family < pa2->family);
+		return _COMPARE(pa1->family, pa2->family);
 	}
 	else
 	{
 		if (pa1->family == AF_INET)
 		{
-			return (pa1->addr.ipv4_addr.s_addr < pa2->addr.ipv4_addr.s_addr);
+			return _COMPARE(pa1->addr.ipv4_addr.s_addr, pa2->addr.ipv4_addr.s_addr);
 		}
 		else
 		{

@@ -28,41 +28,15 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __SOCKET_INFO_H__
 #define __SOCKET_INFO_H__
 
+#include <net/if.h>
+
 #include "address.h"
-
-struct socket_data_listening
-{
-	int backlog;
-	int v6only_option;
-};
-
-struct socket_data_communicating
-{
-	struct polymorphic_sockaddr remote_address;
-};
-
-union u_socket_data_per_state
-{
-	struct socket_data_listening listening;
-	struct socket_data_communicating communicating;
-};
 
 enum socket_state
 {
 	socket_state_created,
 	socket_state_listening,
 	socket_state_communicating
-};
-
-struct socket_data
-{
-	int fd;
-	int type;
-	int protocol;
-	enum socket_state state;
-	struct polymorphic_sockaddr local_address;
-	union u_socket_data_per_state data_per_state;
-	int flag_data_registered;
 };
 
 int get_socket_type(int fd);
@@ -79,6 +53,8 @@ struct polymorphic_sockaddr *get_local_socket_address(int fd);
 void register_local_socket_address(int fd, struct polymorphic_sockaddr *sa);
 struct polymorphic_sockaddr *get_remote_socket_address(int fd);
 void register_remote_socket_address(int fd, struct polymorphic_sockaddr *sa);
+struct ifreq *get_bound_interface(int fd);
+void register_bound_interface(int fd, struct ifreq *interface);
 void free_socket_info(int fd);
 
 #endif

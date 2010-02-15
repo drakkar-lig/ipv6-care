@@ -500,6 +500,36 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return result;
 }
 
+int setsockopt(int sockfd, int level, int optname,
+                      const void *optval, socklen_t optlen)
+{
+	int created_socket, result;
+
+	// also apply the option on the related created socket
+	created_socket = get_created_socket_for_initial_socket(sockfd);
+	if (created_socket != -1)
+	{
+		original_setsockopt(created_socket, level, optname, optval, optlen);
+	}
+
+	// call the function
+	result = original_setsockopt(sockfd, level, optname, optval, optlen);
+
+	// getsockopt with SO_BINDTODEVICE does not work so we record this here
+	// for later retrieval
+	if ((result == 0) && (level == SOL_SOCKET) && (optname == SO_BINDTODEVICE))
+	{
+		register_bound_interface(sockfd, (struct ifreq *)optval);
+
+		if (created_socket != -1)
+		{
+			register_bound_interface(created_socket, (struct ifreq *)optval);
+		}
+	}
+
+	return result;
+}
+
 int socket(int domain, int type, int protocol)
 {
 	int fd;

@@ -32,6 +32,7 @@ Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 #include "common_networking_tools.h"
 #include "created_sockets.h"
 #include "addresses_and_names.h"
+#include "report_socket_options.h"
 
 int get_additional_listening_socket_if_needed(int initial_socket)
 {
@@ -74,12 +75,11 @@ int get_additional_listening_socket_if_needed(int initial_socket)
 
 					if (created_socket != -1)
 					{
-						// TO DO: remapper les setsokopt de la socket initiale
-						// set SO_REUSEADDR option
-						original_setsockopt(created_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
+						report_socket_options(initial_socket, created_socket);
 						
-						// in case of an IPv6 socket, being an additional socket (i.e. there is already another socket 
-						// listening for IPv4 clients) we must set IPV6_V6ONLY to 1 
+						// in case of an IPv6 socket, being an additional socket 
+						// (i.e. there is already another socket listening for IPv4 clients)
+						// we must set IPV6_V6ONLY to 1 
 						v6only_option = 0;
 						if (created_socket_psa.sockaddr.sa.sa_family == AF_INET6)
 						{
