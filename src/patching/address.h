@@ -54,6 +54,7 @@ struct polymorphic_addr
 {
 	union u_addr addr;
 	unsigned int addr_len;
+	void* void_pointer;
 	int family;
 };
 

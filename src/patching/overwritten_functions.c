@@ -50,10 +50,14 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 
 extern int h_errno;
 
-#define debug_print(...)
+#define debug_print(...) // future use
 
-// Start of the network-related functions overriden
-// ------------------------------------------------
+// The functions which are following are redefining the ones of libc.
+// They are in alphabetical order.
+// Some of these functions call some others. So we first need to declare 
+// a few prototypes here for the functions which are called before they are defined.
+int inet_aton(const char *cp, struct in_addr *inp);
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
 int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
@@ -368,6 +372,27 @@ int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 in_addr_t inet_addr(const char *cp) 
 {
 	in_addr_t result;
+	struct in_addr ipv4_addr;
+	int conversion_result;
+
+	// call the modified version of inet_aton below
+	conversion_result = inet_aton(cp, &ipv4_addr);
+
+	if (conversion_result == 0)
+	{
+		result = INADDR_NONE;
+	}
+	else
+	{
+		result = ipv4_addr.s_addr;
+	}
+	
+	return result;
+}
+
+int inet_aton(const char *cp, struct in_addr *inp)
+{
+	int result;
 	char *text_ip;
 	struct polymorphic_addr pa, *new_pa;
 
@@ -375,31 +400,77 @@ in_addr_t inet_addr(const char *cp)
 	if (fill_pa_given_an_ipv6_aware_text_ip(text_ip, &pa) == 0)
 	{
 		new_pa = return_converted_pa(&pa, from_ipv6_aware_to_ipv6_agnostic);
-		result = new_pa->addr.ipv4_addr.s_addr;
+		inp->s_addr = new_pa->addr.ipv4_addr.s_addr;
+		result = 1; // ok
 	}
 	else
 	{
-		result = INADDR_NONE;
+		result = 0; // not ok
 	}
 	return result;
 }
 
 char *inet_ntoa(struct in_addr in)
 {
+	static __thread char buffer[INET6_ADDRSTRLEN];
+	// call the modified inet_ntop below
+	return (char *)inet_ntop(AF_INET, (const void *)&in, buffer, INET6_ADDRSTRLEN);
+}
+
+const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+{
 	struct polymorphic_addr pa;
 	struct mapping_data *mapping_data;
+	const char *result = NULL;
 
-	copy_ipv4_addr_to_pa(&in, &pa);
-	mapping_data = get_mapping_for_address(mapped_ipv4_addr, &pa);
+	if (af == AF_INET)
+	{
+		copy_ipv4_addr_to_pa((struct in_addr *)src, &pa);
+		mapping_data = get_mapping_for_address(mapped_ipv4_addr, &pa);
+		if (mapping_data != NULL)
+		{	// a mapping was registered, let's return the corresponding text form
+			if (strlen(mapping_data->ip_text_forms[full_ipv6])+1 > size)
+			{
+				if (strlen(mapping_data->ip_text_forms[abbreviated_ipv6])+1 > size)
+				{
+					errno = ENOSPC;
+					return NULL;
+				}
+				else
+				{
+					debug_print(1, "Retrieving abbreviated text-form of an IPv6 address...\n");
+					result = mapping_data->ip_text_forms[abbreviated_ipv6];
+				}
+			}
+			else
+			{
+				result = mapping_data->ip_text_forms[full_ipv6];
+			}
+		}
+	}
 
-	if (mapping_data != NULL)
-	{	// a mapping was registered, let's return the corresponding text form
-		debug_print(1, "Retrieving abbreviated text-form of an IPv6 address...\n");
-		return mapping_data->ip_text_forms[mapped_ipv4];
+	if (result == NULL)
+	{
+		result = original_inet_ntop(af, src, dst, size);
+	}
+
+	if (result != NULL)
+	{
+		strcpy(dst, result);
+	}
+
+	return result;
+}
+
+int inet_pton(int af, const char *src, void *dst)
+{
+	if (af == AF_INET)
+	{	// call the modified inet_aton (see above)
+		return inet_aton(src, (struct in_addr *)dst);
 	}
 	else
 	{
-		return original_inet_ntoa(in);
+		return original_inet_pton(af, src, dst);
 	}
 }
 

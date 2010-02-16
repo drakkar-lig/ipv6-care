@@ -71,22 +71,22 @@ void fill_mapping_data_for_ipv6_addr(struct polymorphic_addr *real_ipv6_pa, stru
 	memcpy(&data->pa[real_ipv6_addr], real_ipv6_pa, sizeof(*real_ipv6_pa));
 
 	// ip_text_forms[mapped_ipv4]
-	snprintf(data->ip_text_forms[mapped_ipv4], MAX_IPV4_STRING_LENGTH, 
+	snprintf(data->ip_text_forms[mapped_ipv4], INET_ADDRSTRLEN, 
 			"%s.%d.%d", IPV4_MAPPING_PREFIX, my_index / 256, my_index % 256);
 	// pa[mapped_ipv4_addr]
 	original_inet_pton(AF_INET, data->ip_text_forms[mapped_ipv4], &ipv4_addr);
 	copy_ipv4_addr_to_pa(&ipv4_addr, &data->pa[mapped_ipv4_addr]);
 
 	// ip_text_forms[full_ipv6]
-	original_inet_ntop(AF_INET6, &real_ipv6_pa->addr.ipv6_addr, data->ip_text_forms[full_ipv6], MAX_IPV6_STRING_LENGTH);
+	original_inet_ntop(AF_INET6, &real_ipv6_pa->addr.ipv6_addr, data->ip_text_forms[full_ipv6], INET6_ADDRSTRLEN);
 
 	// ip_text_forms[abbreviated_ipv6]
-	if (strlen(data->ip_text_forms[full_ipv6]) > MAX_IPV4_STRING_LENGTH -1)
+	if (strlen(data->ip_text_forms[full_ipv6]) > INET_ADDRSTRLEN -1)
 	{
 		data->ip_text_forms[abbreviated_ipv6][0] = '.';
 		data->ip_text_forms[abbreviated_ipv6][1] = '.';
 		length = strlen(data->ip_text_forms[full_ipv6]);
-		strcpy(&data->ip_text_forms[abbreviated_ipv6][2], &data->ip_text_forms[full_ipv6][length - MAX_IPV4_STRING_LENGTH +3]);
+		strcpy(&data->ip_text_forms[abbreviated_ipv6][2], &data->ip_text_forms[full_ipv6][length - INET_ADDRSTRLEN +3]);
 	}
 	else
 	{
@@ -137,7 +137,7 @@ struct mapping_data *get_mapping_for_text_form(char *text_form)
 	{
 		for (text_form_index = 0; text_form_index < number_of_mapped_ip_text_forms; text_form_index++)
 		{
-			if (strncmp(entry->data.ip_text_forms[text_form_index], text_form, MAX_IPV6_STRING_LENGTH) == 0)
+			if (strncmp(entry->data.ip_text_forms[text_form_index], text_form, INET6_ADDRSTRLEN) == 0)
 			{
 				result = &entry->data;
 				break;

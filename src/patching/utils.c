@@ -76,6 +76,7 @@ void copy_ipv4_addr_to_pa(struct in_addr *address, struct polymorphic_addr *pa)
 	memcpy(&pa->addr.ipv4_addr, address, sizeof(pa->addr.ipv4_addr));
 	pa->addr_len = sizeof(pa->addr.ipv4_addr);
 	pa->family = AF_INET;
+	pa->void_pointer = (void*)&pa->addr;
 }
 
 void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa)
@@ -83,6 +84,7 @@ void copy_ipv6_addr_to_pa(struct in6_addr *address, struct polymorphic_addr *pa)
 	memcpy(&pa->addr.ipv6_addr, address, sizeof(pa->addr.ipv6_addr));
 	pa->addr_len = sizeof(pa->addr.ipv6_addr);
 	pa->family = AF_INET6;
+	pa->void_pointer = (void*)&pa->addr;
 }
 
 int compare_pa(struct polymorphic_addr *pa1, struct polymorphic_addr *pa2)
