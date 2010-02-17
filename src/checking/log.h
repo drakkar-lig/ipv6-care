@@ -28,10 +28,9 @@ Etienne DUBLE 	-1.0:	Creation
 #ifndef __LOG_H__
 #define __LOG_H__
 void log_if_needed();
-void register_info_start(char *function_name);
+int register_info_start(char *function_name);
 void register_info_end();
 void register_info_int(char *name, int value);
 void register_info_chars(char *name, char *value);
-void do_not_log_this_function();
 #endif
 

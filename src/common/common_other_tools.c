@@ -37,6 +37,9 @@ Etienne DUBLE 	-2.4:	Added get_thread_id
 #include <errno.h>
 #include <stdarg.h>
 
+#include <string.h>
+extern int __close(int fd);
+
 // This function tries to locate the original networking function of the libc
 void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 {
@@ -44,6 +47,16 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 	char *dlerr, *symbol_version;
 	va_list ap;
 	int i;
+
+	// avoid calling dlsym() when trying to find 'close()':
+	// firefox (and maybe others) uses a redefinition of malloc, calloc (called jemalloc)
+	// and it needs an initialisation of these routines. This initialisation
+	// calls close(). If we call dlsym() we will have a loop (or mutex hanging)
+	// because dlsym() calls malloc().
+	if (strcmp(symbol, "close") == 0)
+	{	// redirects directly the alias of the libc
+		return __close;
+	}
 
 	// try the given symbol versions provided first, if any
 	va_start(ap, symbol);

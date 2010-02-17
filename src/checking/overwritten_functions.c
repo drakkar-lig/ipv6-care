@@ -50,6 +50,7 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 #include "pollfd_table_tools.h"
 #include "stack_tools.h"
 #include "common_networking_tools.h"
+#include "common_original_functions.h"
 
 
 #define INTERPRETER_MAX_SIZE	32
@@ -57,47 +58,21 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 
 extern char *interpreter_name; 
 
-/*
- * Each function which has to be detected must be in the following format:
- * -----------------------------------------------------------------------
- * 
- * <return_type> <function>(<args>)
- * {
- * 	__START_FUNCTION_CALL_ANALYSIS(<function>),
- *                                      ARGS(<args_with_no_type>),
- *                                      RETURN_VALUE_IF_FAILURE(<value>))
- *        
- *	// Write the analysis of this function call here
- *	// you may use 'write_problem' to report a non-IPv6 compliant call
- *	// and __REGISTER_INFO_CHARS or __REGISTER_INFO_INT to log an 
- *	// information in the log file.
- *	<analysis_code>
- *
- *       __END_FUNCTION_CALL_ANALYSIS
- * }
- *
- * If you wish to understand what __START_FUNCTION_CALL_ANALYSIS and
- *  __END_FUNCTION_CALL_ANALYSIS macros do, please consult the file 'macros.h'.
- */
-
-
 // Start of the network-related functions overriden
 // ------------------------------------------------
 int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
-	__START_FUNCTION_CALL_ANALYSIS(accept(socket, address, address_len))
-
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
-		__REGISTER_INFO_INT("socket", socket);
-	}
-	else
-	{
-		do_not_log_this_function();
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			__REGISTER_INFO_INT("socket", socket);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_accept(socket, address, address_len);
 }
 
 int bind(int socket, const struct sockaddr *address,
@@ -105,37 +80,34 @@ int bind(int socket, const struct sockaddr *address,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(bind(socket, address, address_len))
-
+	
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
-		get_ip_string_and_port((struct sockaddr *)address, ip, IP_MAX_SIZE, &port);
-		__REGISTER_INFO_INT("socket", socket);
-		__REGISTER_INFO_CHARS("address.ip", ip);
-		__REGISTER_INFO_INT("address.port", port);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			get_ip_string_and_port((struct sockaddr *)address, ip, IP_MAX_SIZE, &port);
+			__REGISTER_INFO_INT("socket", socket);
+			__REGISTER_INFO_CHARS("address.ip", ip);
+			__REGISTER_INFO_INT("address.port", port);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_bind(socket, address, address_len);
 }
 
 int close(int fd)
 {
-	__START_FUNCTION_CALL_ANALYSIS(close(fd))
-
 	if (test_if_fd_is_a_network_socket(fd) == 1)
 	{
-		__REGISTER_INFO_INT("fd", fd);
-	}
-	else
-	{
-		do_not_log_this_function();
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			__REGISTER_INFO_INT("fd", fd);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_close(fd);
 }
 
 int connect(int socket, const struct sockaddr *address,
@@ -143,30 +115,31 @@ int connect(int socket, const struct sockaddr *address,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(connect(socket, address, address_len))
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
-		get_ip_string_and_port((struct sockaddr *)address, ip, IP_MAX_SIZE, &port);
-		__REGISTER_INFO_INT("socket", socket);
-		__REGISTER_INFO_CHARS("address.ip", ip);
-		__REGISTER_INFO_INT("address.port", port);
-	}
-	else
-	{
-		do_not_log_this_function();
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			get_ip_string_and_port((struct sockaddr *)address, ip, IP_MAX_SIZE, &port);
+			__REGISTER_INFO_INT("socket", socket);
+			__REGISTER_INFO_CHARS("address.ip", ip);
+			__REGISTER_INFO_INT("address.port", port);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_connect(socket, address, address_len);
 }
 
 void freeaddrinfo(struct addrinfo *res)
 {
-	__START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(freeaddrinfo(res))
-
-	// no interesting arguments to be logged, only the function itself will be logged
-
-	__END_FUNCTION_CALL_RETURNING_VOID_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		// no interesting arguments to be logged, only the function itself will be logged
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	original_freeaddrinfo(res);
 }
 
 int getaddrinfo(const char *nodename,
@@ -175,67 +148,75 @@ int getaddrinfo(const char *nodename,
 		struct addrinfo **res)
 {
 	int ai_family, ai_socktype, ai_flags;
-	__START_FUNCTION_CALL_ANALYSIS(getaddrinfo(nodename, servname, hints, res))
 
-	if (hints == NULL)
-	{	
-		ai_family = 0;
-		ai_socktype = 0;
-		ai_flags = 0;
-	}
-	else
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
-		ai_family = hints->ai_family;
-		ai_socktype = hints->ai_socktype;
-		ai_flags = hints->ai_flags;
+		if (hints == NULL)
+		{	
+			ai_family = 0;
+			ai_socktype = 0;
+			ai_flags = 0;
+		}
+		else
+		{
+			ai_family = hints->ai_family;
+			ai_socktype = hints->ai_socktype;
+			ai_flags = hints->ai_flags;
+		}
+
+		if ((ai_flags & AI_PASSIVE) != 0)
+		{ // server
+			__REGISTER_INFO_CHARS("ai_flags", "AI_PASSIVE");
+		}
+
+		__REGISTER_INFO_CHARS("ai_family", get_family_string(ai_family));
+		__REGISTER_INFO_CHARS("ai_socktype", get_sock_type_string(ai_socktype));
+		__REGISTER_INFO_CHARS("nodename", nodename);
+		__REGISTER_INFO_CHARS("servname", servname);
+
+		switch(ai_family)
+		{
+			case AF_INET:
+				if (strcmp(interpreter_name, "python") == 0)
+				{
+					write_problem(WARNING, PYTHON_GETADDRINFO_AF_INET_PROBLEM, PYTHON_GETADDRINFO_AF_INET_PROBLEM_DESCRIPTION);
+				}
+				else
+				{
+					write_problem(WARNING, GETADDRINFO_AF_INET_PROBLEM, GETADDRINFO_AF_INET_PROBLEM_DESCRIPTION);
+				}
+				break;
+			case AF_INET6:
+				write_problem(WARNING, GETADDRINFO_AF_INET6_PROBLEM, GETADDRINFO_AF_INET6_PROBLEM_DESCRIPTION);
+				break;
+			case AF_UNSPEC:
+				// ok
+				break;
+			default:
+				// unknown value (ignored)
+				break;
+		}
+
+		__END_FUNCTION_CALL_ANALYSIS
 	}
-
-	if ((ai_flags & AI_PASSIVE) != 0)
-	{ // server
-		__REGISTER_INFO_CHARS("ai_flags", "AI_PASSIVE");
-	}
-
-	__REGISTER_INFO_CHARS("ai_family", get_family_string(ai_family));
-	__REGISTER_INFO_CHARS("ai_socktype", get_sock_type_string(ai_socktype));
-	__REGISTER_INFO_CHARS("nodename", nodename);
-	__REGISTER_INFO_CHARS("servname", servname);
-
-	switch(ai_family)
-	{
-		case AF_INET:
-			if (strcmp(interpreter_name, "python") == 0)
-			{
-				write_problem(WARNING, PYTHON_GETADDRINFO_AF_INET_PROBLEM, PYTHON_GETADDRINFO_AF_INET_PROBLEM_DESCRIPTION);
-			}
-			else
-			{
-				write_problem(WARNING, GETADDRINFO_AF_INET_PROBLEM, GETADDRINFO_AF_INET_PROBLEM_DESCRIPTION);
-			}
-			break;
-		case AF_INET6:
-			write_problem(WARNING, GETADDRINFO_AF_INET6_PROBLEM, GETADDRINFO_AF_INET6_PROBLEM_DESCRIPTION);
-			break;
-		case AF_UNSPEC:
-			// ok
-			break;
-		default:
-			// unknown value (ignored)
-			break;
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_getaddrinfo(nodename, servname, hints, res);
 }
 
 struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
 	char ip[IP_MAX_SIZE];
-	__START_FUNCTION_CALL_ANALYSIS(gethostbyaddr(addr, len, type))
 
-	inet_ntop(type, addr, ip, IP_MAX_SIZE);
-	__REGISTER_INFO_CHARS("addr.ip", ip);
-	write_problem(WARNING, GETHOSTBYADDR_PROBLEM, GETHOSTBYADDR_PROBLEM_DESCRIPTION);
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		original_inet_ntop(type, addr, ip, IP_MAX_SIZE);
+		__REGISTER_INFO_CHARS("addr.ip", ip);
+		write_problem(WARNING, GETHOSTBYADDR_PROBLEM, GETHOSTBYADDR_PROBLEM_DESCRIPTION);
 
-	__END_FUNCTION_CALL_ANALYSIS
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_gethostbyaddr(addr, len, type);
 }
 
 int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
@@ -243,43 +224,51 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 			struct hostent **result, int *h_errnop)
 {
 	char ip[IP_MAX_SIZE];
-	__START_FUNCTION_CALL_ANALYSIS(gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop))
 
-	inet_ntop(type, addr, ip, IP_MAX_SIZE);
-	__REGISTER_INFO_CHARS("addr.ip", ip);
-	write_problem(WARNING, GETHOSTBYADDR_R_PROBLEM, GETHOSTBYADDR_R_PROBLEM_DESCRIPTION);
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		original_inet_ntop(type, addr, ip, IP_MAX_SIZE);
+		__REGISTER_INFO_CHARS("addr.ip", ip);
+		write_problem(WARNING, GETHOSTBYADDR_R_PROBLEM, GETHOSTBYADDR_R_PROBLEM_DESCRIPTION);
 
-	__END_FUNCTION_CALL_ANALYSIS
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop);
 }
 
 struct hostent *gethostbyname(const char *name)
 {
-	__START_FUNCTION_CALL_ANALYSIS(gethostbyname(name))
-
-	__REGISTER_INFO_CHARS("name", name);
-	write_problem(ERROR, GETHOSTBYNAME_PROBLEM, GETHOSTBYNAME_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_CHARS("name", name);
+		write_problem(ERROR, GETHOSTBYNAME_PROBLEM, GETHOSTBYNAME_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_gethostbyname(name);
 }
 
 int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
-	__START_FUNCTION_CALL_ANALYSIS(gethostbyname_r(name, ret, buf, buflen, result, h_errnop))
-
-	__REGISTER_INFO_CHARS("name", name);
-
-	if (strcmp(interpreter_name, "perl") == 0)
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
-		write_problem(ERROR, PERL_GETHOSTBYNAME_R_PROBLEM, PERL_GETHOSTBYNAME_R_PROBLEM_DESCRIPTION);
-	}
-	else
-	{
-		write_problem(ERROR, GETHOSTBYNAME_R_PROBLEM, GETHOSTBYNAME_R_PROBLEM_DESCRIPTION);
-	}
+		__REGISTER_INFO_CHARS("name", name);
 
-	__END_FUNCTION_CALL_ANALYSIS
+		if (strcmp(interpreter_name, "perl") == 0)
+		{
+			write_problem(ERROR, PERL_GETHOSTBYNAME_R_PROBLEM, PERL_GETHOSTBYNAME_R_PROBLEM_DESCRIPTION);
+		}
+		else
+		{
+			write_problem(ERROR, GETHOSTBYNAME_R_PROBLEM, GETHOSTBYNAME_R_PROBLEM_DESCRIPTION);
+		}
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 }
 
 int getnameinfo(const struct sockaddr *sa, socklen_t salen,
@@ -288,54 +277,65 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
 	char ip[IP_MAX_SIZE];
 	int port;
-	__START_FUNCTION_CALL_ANALYSIS(getnameinfo(sa, salen, node, nodelen, service, servicelen, flags))
-
+	
 	if (sa != NULL)		// this would be an error in the calling program
 	{
-		get_ip_string_and_port((struct sockaddr *)sa, ip, IP_MAX_SIZE, &port);
-		__REGISTER_INFO_CHARS("sa.ip", ip);
-		__REGISTER_INFO_INT("sa.port", port);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			get_ip_string_and_port((struct sockaddr *)sa, ip, IP_MAX_SIZE, &port);
+			__REGISTER_INFO_CHARS("sa.ip", ip);
+			__REGISTER_INFO_INT("sa.port", port);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_getnameinfo(sa, salen, node, nodelen, service, servicelen, flags);
 }
 
 int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	__START_FUNCTION_CALL_ANALYSIS(getpeername(sockfd, addr, addrlen))
-
-	__REGISTER_INFO_INT("sockfd", sockfd);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_INT("sockfd", sockfd);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_getpeername(sockfd, addr, addrlen);
 }
 
 int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	__START_FUNCTION_CALL_ANALYSIS(getsockname(sockfd, addr, addrlen))
-
-	__REGISTER_INFO_INT("sockfd", sockfd);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_INT("sockfd", sockfd);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_getsockname(sockfd, addr, addrlen);
 }
 
 in_addr_t inet_addr(const char *cp)
 {
-	__START_FUNCTION_CALL_ANALYSIS(inet_addr(cp))
-
-	__REGISTER_INFO_CHARS("cp", cp);
-	write_problem(ERROR, INET_ADDR_PROBLEM, INET_ADDR_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_CHARS("cp", cp);
+		write_problem(ERROR, INET_ADDR_PROBLEM, INET_ADDR_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_inet_addr(cp);
 }
 
 int inet_aton(const char *cp, struct in_addr *inp)
 {
-	__START_FUNCTION_CALL_ANALYSIS(inet_aton(cp, inp))
-
-	__REGISTER_INFO_CHARS("cp", cp);
-	write_problem(ERROR, INET_ATON_PROBLEM, INET_ATON_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_CHARS("cp", cp);
+		write_problem(ERROR, INET_ATON_PROBLEM, INET_ATON_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_inet_aton(cp, inp);
 }
 
 char *inet_ntoa(struct in_addr in)
@@ -344,168 +344,158 @@ char *inet_ntoa(struct in_addr in)
 	int port;
 	struct sockaddr_storage sas;
 	struct sockaddr_in *sa_in = (struct sockaddr_in *)&sas;
-	__START_FUNCTION_CALL_ANALYSIS(inet_ntoa(in))
 
-	// retrieve the ip for the log
-	memset(&sas, 0, sizeof(struct sockaddr_storage));
-	sa_in->sin_family = AF_INET;
-	memcpy(&sa_in->sin_addr, &in, sizeof(struct in_addr)); 
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		// retrieve the ip for the log
+		memset(&sas, 0, sizeof(struct sockaddr_storage));
+		sa_in->sin_family = AF_INET;
+		memcpy(&sa_in->sin_addr, &in, sizeof(struct in_addr)); 
 
-	get_ip_string_and_port((struct sockaddr *)sa_in, ip, IP_MAX_SIZE, &port);
+		get_ip_string_and_port((struct sockaddr *)sa_in, ip, IP_MAX_SIZE, &port);
 
-	__REGISTER_INFO_CHARS("in", ip);
-	write_problem(ERROR, INET_NTOA_PROBLEM, INET_NTOA_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+		__REGISTER_INFO_CHARS("in", ip);
+		write_problem(ERROR, INET_NTOA_PROBLEM, INET_NTOA_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_inet_ntoa(in);
 }
 
 const char *inet_ntop(int af, const void *src,
               char *dst, socklen_t size)
 {
 	char ip[IP_MAX_SIZE];
-	__START_FUNCTION_CALL_ANALYSIS(inet_ntop(af, src, dst, size))
-
-	// retrieve the ip for the log
-	// (due to the implementation of __START_FUNCTION_CALL_ANALYSIS
-	// this 2nd call to inet_ntop will not be detected)
-	inet_ntop(af, src, ip, IP_MAX_SIZE);
-	__REGISTER_INFO_CHARS("src", ip);
-	write_problem(WARNING, INET_NTOP_PROBLEM, INET_NTOP_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		original_inet_ntop(af, src, ip, IP_MAX_SIZE);
+		__REGISTER_INFO_CHARS("src", ip);
+		write_problem(WARNING, INET_NTOP_PROBLEM, INET_NTOP_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_inet_ntop(af, src, dst, size);
 }
 
 int inet_pton(int af, const char *src, void *dst)
 {
-	__START_FUNCTION_CALL_ANALYSIS(inet_pton(af, src, dst))
-
-	__REGISTER_INFO_CHARS("src", src);
-	write_problem(WARNING, INET_PTON_PROBLEM, INET_PTON_PROBLEM_DESCRIPTION);
-
-	__END_FUNCTION_CALL_ANALYSIS
+	if (__START_FUNCTION_CALL_ANALYSIS_OK)
+	{
+		__REGISTER_INFO_CHARS("src", src);
+		write_problem(WARNING, INET_PTON_PROBLEM, INET_PTON_PROBLEM_DESCRIPTION);
+		__END_FUNCTION_CALL_ANALYSIS
+	}
+	
+	return original_inet_pton(af, src, dst);
 }
 
 int listen(int socket, int backlog)
 {
-	__START_FUNCTION_CALL_ANALYSIS(listen(socket, backlog))
-
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
-		__REGISTER_INFO_INT("socket", socket);
-		__REGISTER_INFO_INT("backlog", backlog);
-	}
-	else
-	{
-		do_not_log_this_function();
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			__REGISTER_INFO_INT("socket", socket);
+			__REGISTER_INFO_INT("backlog", backlog);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_listen(socket, backlog);
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-	__START_FUNCTION_CALL_ANALYSIS(poll(fds, nfds, timeout))
-
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
-		register_pollfd_table_parameters(fds, nfds);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			register_pollfd_table_parameters(fds, nfds);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_poll(fds, nfds, timeout);
 }
 
 int ppoll(struct pollfd *fds, nfds_t nfds,
                const struct timespec *timeout, const sigset_t *sigmask)
 {
-	__START_FUNCTION_CALL_ANALYSIS(ppoll(fds, nfds, timeout, sigmask))
-
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
-		register_pollfd_table_parameters(fds, nfds);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			register_pollfd_table_parameters(fds, nfds);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_ppoll(fds, nfds, timeout, sigmask);
 }
 
 int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {
-	__START_FUNCTION_CALL_ANALYSIS(pselect(nfds, readfds, writefds, errorfds, timeout, sigmask))
-
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
-		register_fd_sets_parameters(nfds, readfds, writefds, errorfds);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			register_fd_sets_parameters(nfds, readfds, writefds, errorfds);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_pselect(nfds, readfds, writefds, errorfds, timeout, sigmask);
 }
 
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
-	__START_FUNCTION_CALL_ANALYSIS(select(nfds, readfds, writefds, errorfds, timeout))
-
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
-		register_fd_sets_parameters(nfds, readfds, writefds, errorfds);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			register_fd_sets_parameters(nfds, readfds, writefds, errorfds);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_select(nfds, readfds, writefds, errorfds, timeout);
 }
 
 int setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len)
 {
 	int value;
-	__START_FUNCTION_CALL_ANALYSIS(setsockopt(socket, level, option_name, option_value, option_len))
-
-	value = *(int*)option_value;
-
+	
 	if ((level == IPPROTO_IPV6) && (option_name == IPV6_V6ONLY))
 	{
-		__REGISTER_INFO_INT("socket", socket);
-		__REGISTER_INFO_CHARS("option_name", "IPV6_V6ONLY");
-		__REGISTER_INFO_INT("value", value);
-	}
-	else
-	{
-		do_not_log_this_function();
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			value = *(int*)option_value;
+			__REGISTER_INFO_INT("socket", socket);
+			__REGISTER_INFO_CHARS("option_name", "IPV6_V6ONLY");
+			__REGISTER_INFO_INT("value", value);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
 
-	__END_FUNCTION_CALL_ANALYSIS
+	return original_setsockopt(socket, level, option_name, option_value, option_len);
 }
 
 int socket(int domain, int type, int protocol)
 {
-	__START_FUNCTION_CALL_ANALYSIS(socket(domain, type, protocol))
-
 	if ((domain == AF_INET)||(domain == AF_INET6))
 	{
-		__REGISTER_INFO_CHARS("domain", get_family_string(domain));
-		__REGISTER_INFO_CHARS("type", get_sock_type_string(type));
-		__REGISTER_INFO_CHARS("protocol", getprotobynumber(protocol)->p_name);
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			__REGISTER_INFO_CHARS("domain", get_family_string(domain));
+			__REGISTER_INFO_CHARS("type", get_sock_type_string(type));
+			__REGISTER_INFO_CHARS("protocol", getprotobynumber(protocol)->p_name);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
 	}
-	else
-	{
-		do_not_log_this_function();
-	}
-
-	__END_FUNCTION_CALL_ANALYSIS
+	
+	return original_socket(domain, type, protocol);
 }
 

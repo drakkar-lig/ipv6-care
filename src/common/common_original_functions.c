@@ -219,16 +219,13 @@ int original_getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	return result;
 }
 
-int original_getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen)
-{
-	int result;
-
-	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(getsockopt),
-					ARGS(sockfd, level, optname, optval, optlen),
-					RETURN_VALUE_IF_FAILURE(-1),
-					RESULT(result));
-	return result;
-}
+// no original_getsockopt() should be defined:
+// the library should not have to call dlsym in order to find getsockopt()
+// because getsockopt() is called in test_if_fd_is_a_network_socket() 
+// which is used in many overwritten functions to avoid calling the library's code.
+// for example, firefox redefines malloc() and calloc(), their malloc() calls close() which calls 
+// test_if_fd_is_a_network_socket(), which calls getsockopt(). dlsym() calls calloc(), 
+// so if getsockopt() calls dlsym() we have problems.
 
 in_addr_t original_inet_addr(const char *cp)
 {

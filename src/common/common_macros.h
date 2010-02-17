@@ -30,6 +30,8 @@ Etienne DUBLE 	- 3.0: 	Creation
 
 #include "common_other_tools.h"
 
+extern __thread int function_depth;
+
 /* The PP_NARG macro returns the number of arguments that have been
  * passed to it. 
  * (Idea from Laurent Deniau 
@@ -92,7 +94,9 @@ Etienne DUBLE 	- 3.0: 	Creation
 	__DEFINE_ORIGINAL_SYMBOL(p_original_func, __func_name, ##__VA_ARGS__)	\
 	if (p_original_func != NULL) 						\
 	{									\
+		function_depth += 1;						\
 		__result = p_original_func __func_args;				\
+		function_depth -= 1;						\
 	}									\
 	else 									\
 	{									\
@@ -105,7 +109,9 @@ Etienne DUBLE 	- 3.0: 	Creation
 	__DEFINE_ORIGINAL_SYMBOL(p_original_func, __func_name, ##__VA_ARGS__)	\
 	if (p_original_func != NULL) 						\
 	{									\
+		function_depth += 1;						\
 		p_original_func __func_args;					\
+		function_depth -= 1;						\
 	}									\
 
 #endif

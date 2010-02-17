@@ -40,21 +40,32 @@ int test_if_fd_is_a_network_socket(int fd)
 	struct sockaddr_storage sas;
 	unsigned int size = sizeof(sas);
 	struct sockaddr *sa = (struct sockaddr *)&sas;
+	int optval;
+	unsigned int opt_size;
+
+	opt_size = sizeof(optval);
+	if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &optval, &opt_size) == -1)
+	{
+		return -1;
+	}
+
+	if ((optval != SOCK_STREAM) && (optval != SOCK_DGRAM))
+	{
+		return -1;
+	}
 
 	if(original_getsockname(fd, sa, &size) == -1)
 	{
 		return -1;
 	}
+
+	if ((sa->sa_family == AF_INET)||(sa->sa_family == AF_INET6))
+	{
+		return 1;
+	}
 	else
 	{
-		if ((sa->sa_family == AF_INET)||(sa->sa_family == AF_INET6))
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
-		}
+		return 0;
 	}
 }
 

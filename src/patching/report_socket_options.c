@@ -37,7 +37,7 @@ Etienne DUBLE 	-3.0:	Creation
 	socklen_t option_size;								\
 											\
 	option_size = sizeof(option_value);						\
-	if (original_getsockopt(old_socket, SOL_SOCKET, option, 			\
+	if (getsockopt(old_socket, SOL_SOCKET, option, 			\
 			(char *)&option_value, &option_size) == 0) {			\
 		original_setsockopt(new_socket, SOL_SOCKET, option,			\
 			(char *)&option_value, sizeof(option_value));			\
@@ -52,7 +52,7 @@ void REPORT_SND_OR_RCV_BUF(int option, int old_socket, int new_socket)
 	socklen_t option_size;
 
 	option_size = sizeof(option_value);
-	if (original_getsockopt(old_socket, SOL_SOCKET, option, 
+	if (getsockopt(old_socket, SOL_SOCKET, option, 
 			(char *)&option_value, &option_size) == 0) {
 		option_value /= 2;
 		original_setsockopt(new_socket, SOL_SOCKET, option,

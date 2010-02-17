@@ -34,120 +34,13 @@ Etienne DUBLE   - 3.0:  Original functions now in 'common' directory
 #ifndef __MACROS_H__
 #define __MACROS_H__
 
-#include "init_lib.h"
 #include "log.h"
-#include "function_state.h"
-#include "common_original_functions.h"
 
-extern int max_function_depth_reported;
-
-extern __thread int function_depth;
-extern __thread int function_analysis_started;
-
-/*
- * Please first look at the file overwritten_function.c to understand 
- * how __START_FUNCTION_CALL_ANALYSIS and __END_FUNCTION_CALL_ANALYSIS
- * are used. 
- * 
- * The main goal of the __START_FUNCTION_CALL_ANALYSIS macro is to chain
- * the original function (of the standard libc) to the current function 
- * (the one we are writting to perform the function call analysis).
- * The function_analysis_started variable is used to avoid a recursive 
- * analysis of another function B which would be called during the analysis 
- * phase of a function A. In this case the analysis of the inner function B 
- * is bypassed (consequently the original B function of the libc is called
- * directly).
- * __START_FUNCTION_CALL_ANALYSIS also initialise the logging process of this
- * function.
- * 
- * __END_FUNCTION_CALL_ANALYSIS ends the logging process of this function,
- * reset the function_analysis_started variable to 0, and returns some value
- * (this return value is actually not used due to the implementation of 
- * __START_FUNCTION_CALL_ANALYSIS, but it is required by the compiler.)
- */
-
-#define __START_FUNCTION_CALL_ANALYSIS(__func_call)				\
-										\
-	static enum function_state __state__ = initial_state;			\
-	typeof(__func_call) __result__;						\
-										\
-	one_time_library_init(&__state__);					\
-										\
-	switch(__state__)							\
-	{									\
-		case initial_state:						\
-			if ((function_analysis_started == 0) &&			\
-			    (function_depth <= max_function_depth_reported)) {	\
-				__state__ = analysis_state;			\
-				__func_call;					\
-			}							\
-			__state__ = call_original_function_state; 		\
-			return __func_call;                 			\
-										\
-		case call_original_function_state:				\
-			function_depth += 1; 					\
-			__result__ = original_ ## __func_call;			\
-			function_depth -= 1;					\
-			__state__ = initial_state;				\
-			return __result__;					\
-										\
-		case analysis_state:						\
-			if (function_analysis_started == 1) {			\
-				__state__ = call_original_function_state;	\
-				return __func_call;				\
-			}							\
-			break;							\
-	}									\
-										\
-	function_analysis_started = 1;						\
-	register_info_start((char *)__FUNCTION__); 
+#define __START_FUNCTION_CALL_ANALYSIS_OK					\
+	(register_info_start((char *)__FUNCTION__) == 0)
 
 #define __END_FUNCTION_CALL_ANALYSIS						\
-	register_info_end(); 							\
-	function_analysis_started = 0;						\
-	return (typeof(__result__))0;
-	
-#define __START_FUNCTION_CALL_RETURNING_VOID_ANALYSIS(__func_call)		\
-										\
-	static enum function_state __state__ = initial_state;			\
-										\
-	one_time_library_init(&__state__);					\
-										\
-	switch(__state__)							\
-	{									\
-		case initial_state:						\
-			if ((function_analysis_started == 0) &&			\
-			    (function_depth <= max_function_depth_reported)) {	\
-				__state__ = analysis_state;			\
-				__func_call;					\
-			}							\
-			__state__ = call_original_function_state; 		\
-			__func_call;                 				\
-			return;							\
-										\
-		case call_original_function_state:				\
-			function_depth += 1; 					\
-			original_ ## __func_call;				\
-			function_depth -= 1;					\
-			__state__ = initial_state;				\
-			return;							\
-										\
-		case analysis_state:						\
-			if (function_analysis_started == 1) {			\
-				__state__ = call_original_function_state;	\
-				__func_call;					\
-				return;						\
-			}							\
-			break;							\
-	}									\
-										\
-	function_analysis_started = 1;						\
-	register_info_start((char *)__FUNCTION__); 
-
-#define __END_FUNCTION_CALL_RETURNING_VOID_ANALYSIS				\
-	register_info_end(); 							\
-	function_analysis_started = 0;						\
-	return;
+	register_info_end();
 	
 #define __REGISTER_INFO_INT(name, value) 		register_info_int(name, value)
 #define __REGISTER_INFO_CHARS(name, value) 		register_info_chars(name, (char *)value)

@@ -56,7 +56,6 @@ int original_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		socklen_t servicelen, unsigned int flags);
 int original_getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int original_getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-int original_getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 in_addr_t original_inet_addr(const char *cp);
 int original_inet_aton(const char *cp, struct in_addr *inp);
 char *original_inet_ntoa(struct in_addr in);

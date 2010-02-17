@@ -41,12 +41,9 @@ char *ld_preload_value = NULL;
 char *interpreter_name = NULL;
 
 // per-thread variables
-__thread int function_depth=0;
 __thread char *log_file_content = NULL;
 __thread char *log_function_line = NULL;
 __thread int index_last_line = -1;
-__thread int log_this_function = 0;
 __thread int log_file_allocated_size = 0;
-__thread int function_analysis_started = 0;
 
 

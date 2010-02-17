@@ -28,7 +28,6 @@ Etienne DUBLE 	-1.0:	Creation
 #ifndef __INIT_LIB_H__
 #define __INIT_LIB_H__
 
-#include "function_state.h"
 void init_lib();
-void one_time_library_init(enum function_state *state);
+int one_time_library_init();
 #endif

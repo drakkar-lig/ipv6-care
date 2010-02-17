@@ -31,3 +31,5 @@ Etienne DUBLE 	-2.5:	Creation
 FILE *tty_fd;
 
 // per-thread variables
+__thread int function_depth=0;
+

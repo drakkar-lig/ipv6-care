@@ -146,7 +146,7 @@ void compute_socket_type (int fd, struct socket_data *data)
 {
 	unsigned int socktype_size;
 	socktype_size = sizeof (data->type);
-	original_getsockopt (fd, 1, 3, (char *) &data->type, &socktype_size);
+	getsockopt (fd, 1, 3, (char *) &data->type, &socktype_size);
 }
 
 void compute_listening_socket_v6only_option (int fd, struct socket_data *data)
@@ -154,7 +154,7 @@ void compute_listening_socket_v6only_option (int fd, struct socket_data *data)
 	unsigned int sockoption_size;
 
 	sockoption_size = sizeof (data->data_per_state.listening.v6only_option);
-	original_getsockopt (fd, IPPROTO_IPV6, 26, (char *) &data->data_per_state.listening.v6only_option, &sockoption_size);
+	getsockopt (fd, IPPROTO_IPV6, 26, (char *) &data->data_per_state.listening.v6only_option, &sockoption_size);
 }
 
 void compute_socket_protocol (int fd __attribute__ ((unused)), struct socket_data *data)
@@ -176,7 +176,7 @@ void compute_socket_state (int fd, struct socket_data *data)
 	union u_sockaddr sa;
 
 	option_size = sizeof(option_listening);
-	original_getsockopt (fd, SOL_SOCKET, SO_ACCEPTCONN, (char *) &option_listening, &option_size);
+	getsockopt (fd, SOL_SOCKET, SO_ACCEPTCONN, (char *) &option_listening, &option_size);
 	if (option_listening == 1)
 	{
 		data->state = socket_state_listening;

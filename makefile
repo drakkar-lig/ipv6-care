@@ -34,7 +34,7 @@
 # Etienne DUBLE 	-2.5:	Compression of man page at install
 # Etienne DUBLE 	-3.0:	Disable system patch mode at install/uninstall (if enabled)
 
-VERSION=3.0-alpha2
+VERSION=3.0
 
 PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)

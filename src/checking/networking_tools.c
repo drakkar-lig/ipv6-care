@@ -34,6 +34,7 @@ Etienne DUBLE 	-2.3:	Added test_if_fd_is_a_network_socket
 #include <netdb.h>
 
 #include "get_string.h"
+#include "common_original_functions.h"
 
 #define MAX_PORT_LENGTH 16
 
@@ -44,7 +45,7 @@ void get_ip_string_and_port(struct sockaddr *paddress, char *ip, int ip_length, 
 	char port_string[MAX_PORT_LENGTH];
 
         // retrieve the ip and port number
-        getnameinfo(paddress, sizeof(struct sockaddr_storage), ip, ip_length, port_string, 
+        original_getnameinfo(paddress, sizeof(struct sockaddr_storage), ip, ip_length, port_string, 
 			MAX_PORT_LENGTH, NI_NUMERICHOST|NI_NUMERICSERV);
 	*port = atoi(port_string);
 

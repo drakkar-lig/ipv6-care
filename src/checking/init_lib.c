@@ -43,7 +43,6 @@ Etienne DUBLE 	-2.5:	Removed variable log_all
 #include "stack_tools.h"
 #include "append_to_string.h"
 #include "system_commands.h"
-#include "function_state.h"
 
 extern int max_function_depth_reported;
 extern int interpreted_language;
@@ -154,9 +153,12 @@ void init_lib()
 	}
 }
 
-void one_time_library_init(enum function_state *state)
+int one_time_library_init()
 {
 	static enum init_lib_state __init_lib_state__ = not_done_state;
+	int result;
+
+	result = 0;
 
 	switch(__init_lib_state__)
 	{
@@ -169,10 +171,12 @@ void one_time_library_init(enum function_state *state)
 			// if a network related function call is done during the init_lib() procedure
 			// this function will be called. 
 			// In this case we don't want ipv6-care to analyse this function:
-			*state = call_original_function_state;
+			result = -1;
 			break;
 		case done_state:
 			break;
 	}
+
+	return result;
 }
 

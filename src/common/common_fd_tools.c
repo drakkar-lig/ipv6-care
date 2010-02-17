@@ -34,6 +34,8 @@ Etienne DUBLE 	-2.5:	Improved robustness
 
 extern FILE *tty_fd;
 
+#define MAX_TTY_NAME_SIZE 128
+
 // This function saves the fd corresponding to stdout.
 // It is useful for daemons which usually close their 
 // tty file descriptors, therefore IPv6 CARE cannot
@@ -41,15 +43,14 @@ extern FILE *tty_fd;
 
 void save_tty_fd()
 {
-	char *tty_name;
+	char tty_name[MAX_TTY_NAME_SIZE];
 	int done_ok = 0;
 
 	if (isatty(1))
 	{
-		tty_name = ttyname(1);
-		if (tty_name != NULL)
+		if (ttyname_r(1, tty_name, MAX_TTY_NAME_SIZE) == 0)
 		{
-			tty_fd = fopen(ttyname(1), "w+");
+			tty_fd = fopen(tty_name, "w+");
 			if (tty_fd != NULL)
 			{
 				done_ok = 1;
