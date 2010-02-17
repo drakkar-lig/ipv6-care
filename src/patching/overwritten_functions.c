@@ -63,14 +63,16 @@ int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
 	int new_socket_created, resulting_socket, communication_socket, 
-		got_connection_on_a_created_socket;
+		got_connection_on_a_created_socket, this_is_a_network_socket;
 
 	got_connection_on_a_created_socket = 0;
 	resulting_socket = socket; // default
+	this_is_a_network_socket = 0;
 
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
 		new_socket_created = get_additional_listening_socket_if_needed(socket);
+		this_is_a_network_socket = 1;
 
 		if (new_socket_created != -1)
 		{
@@ -87,7 +89,7 @@ int accept(int socket, struct sockaddr *address,
 
 	communication_socket = original_accept(resulting_socket, address, address_len);
 
-	if (communication_socket != -1)
+	if ((this_is_a_network_socket == 1)&&(communication_socket != -1))
 	{
 		if (got_connection_on_a_created_socket == 1)
 		{
@@ -109,7 +111,7 @@ int bind(int socket, const struct sockaddr *address,
 	struct polymorphic_sockaddr psa;
 
 	result = original_bind(socket, address, address_len);
-	if (result == 0)
+	if ((test_if_fd_is_a_network_socket(socket) == 1) && (result == 0))
 	{
 		copy_sockaddr_to_psa((struct sockaddr *)address, address_len, &psa);
 		register_local_socket_address(socket, &psa);
@@ -122,13 +124,24 @@ int close(int fd)
 {
 	int result;
 
-	close_sockets_related_to_fd(fd);
-	result = original_close(fd);
-	if (result == 0)
+	// we must try to get a very low intrusiveness with the close() call
+	// because it is called very often and many times on descriptors which
+	// are not sockets...
+	if (test_if_fd_is_a_network_socket(fd) == 1)
 	{
-		free_created_socket_data(fd); // if fd was created by IPv6 CARE
-		free_socket_info(fd);
+		close_sockets_related_to_fd(fd);
+		result = original_close(fd);
+		if (result == 0)
+		{
+			free_created_socket_data(fd); // if fd was created by IPv6 CARE
+			free_socket_info(fd);
+		}
 	}
+	else
+	{
+		result = original_close(fd);
+	}
+
 	return result;
 }
 
@@ -576,26 +589,33 @@ int setsockopt(int sockfd, int level, int optname,
 {
 	int created_socket, result;
 
-	// also apply the option on the related created socket
-	created_socket = get_created_socket_for_initial_socket(sockfd);
-	if (created_socket != -1)
+	if (test_if_fd_is_a_network_socket(sockfd) == 1)
 	{
-		original_setsockopt(created_socket, level, optname, optval, optlen);
-	}
-
-	// call the function
-	result = original_setsockopt(sockfd, level, optname, optval, optlen);
-
-	// getsockopt with SO_BINDTODEVICE does not work so we record this here
-	// for later retrieval
-	if ((result == 0) && (level == SOL_SOCKET) && (optname == SO_BINDTODEVICE))
-	{
-		register_bound_interface(sockfd, (struct ifreq *)optval);
-
+		// also apply the option on the related created socket if any
+		created_socket = get_created_socket_for_initial_socket(sockfd);
 		if (created_socket != -1)
 		{
-			register_bound_interface(created_socket, (struct ifreq *)optval);
+			original_setsockopt(created_socket, level, optname, optval, optlen);
 		}
+
+		// call the function
+		result = original_setsockopt(sockfd, level, optname, optval, optlen);
+
+		// getsockopt with SO_BINDTODEVICE does not work so we record this here
+		// for later retrieval
+		if ((result == 0) && (level == SOL_SOCKET) && (optname == SO_BINDTODEVICE))
+		{
+			register_bound_interface(sockfd, (struct ifreq *)optval);
+
+			if (created_socket != -1)
+			{
+				register_bound_interface(created_socket, (struct ifreq *)optval);
+			}
+		}
+	}
+	else
+	{
+		result = original_setsockopt(sockfd, level, optname, optval, optlen);
 	}
 
 	return result;

@@ -31,6 +31,7 @@ Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
 
 #include "listening_sockets.h"
 #include "common_original_functions.h"
+#include "common_networking_tools.h"
 #include "created_sockets.h"
 #include "addresses_and_names.h"
 
@@ -53,19 +54,22 @@ void manage_socket_accesses_on_fdset(int *nfds, fd_set *initial_fds, fd_set *fin
 			{
 				FD_SET(fd, final_fds);
 
-				if (get_socket_state(fd) == socket_state_listening)
+				if (test_if_fd_is_a_network_socket(fd) == 1)
 				{
-					created_socket = get_additional_listening_socket_if_needed(fd);
-					if (created_socket != -1)
-					{	// a new socket was created, add it in the final_fds
-						FD_SET(created_socket, final_fds);
+					if (get_socket_state(fd) == socket_state_listening)
+					{
+						created_socket = get_additional_listening_socket_if_needed(fd);
+						if (created_socket != -1)
+						{	// a new socket was created, add it in the final_fds
+							FD_SET(created_socket, final_fds);
 
-						debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
+							debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
 
-						// update nfds if needed
-						if (created_socket >= *nfds)
-						{
-							*nfds = created_socket +1;
+							// update nfds if needed
+							if (created_socket >= *nfds)
+							{
+								*nfds = created_socket +1;
+							}
 						}
 					}
 				}
@@ -96,14 +100,17 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 		{
 			if (FD_ISSET(fd, final_fds))
 			{
-				initial_socket = get_initial_socket_for_created_socket(fd);
-				if (initial_socket < 0)
-				{	// fd has no corresponding initial_socket
-					FD_SET(fd, &resulting_initial_fds);
-				}
-				else
-				{	// fd was created by IPv6 CARE, set its initial_socket in initial_fds
-					FD_SET(initial_socket, &resulting_initial_fds);
+				if (test_if_fd_is_a_network_socket(fd) == 1)
+				{
+					initial_socket = get_initial_socket_for_created_socket(fd);
+					if (initial_socket < 0)
+					{	// fd has no corresponding initial_socket
+						FD_SET(fd, &resulting_initial_fds);
+					}
+					else
+					{	// fd was created by IPv6 CARE, set its initial_socket in initial_fds
+						FD_SET(initial_socket, &resulting_initial_fds);
+					}
 				}
 			}
 		}
@@ -138,24 +145,27 @@ void manage_socket_accesses_on_pollfd_table(int nfds, int *final_nfds, struct po
 	for (index = 0; index < nfds; index++)
 	{
 		fd = fds[index].fd;
-		if (get_socket_state(fd) == socket_state_listening)
+		if (test_if_fd_is_a_network_socket(fd) == 1)
 		{
-			created_socket = get_additional_listening_socket_if_needed(fd);
-			if (created_socket != -1)
-			{	// a new socket was created, add it in the final_fds
-				debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
+			if (get_socket_state(fd) == socket_state_listening)
+			{
+				created_socket = get_additional_listening_socket_if_needed(fd);
+				if (created_socket != -1)
+				{	// a new socket was created, add it in the final_fds
+					debug_print(1, "Created additional socket in order to wait on both IPv4 and IPv6 events.\n");
 
-				// enlarge the table if needed
-				if (new_nfds == allocated)
-				{
-					allocated = 2*allocated;
-					*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
+					// enlarge the table if needed
+					if (new_nfds == allocated)
+					{
+						allocated = 2*allocated;
+						*final_fds = realloc(*final_fds, allocated*sizeof(struct pollfd));
+					}
+
+					// copy the info and set the fd as the new socket
+					memcpy(&(*final_fds)[new_nfds], &fds[index], sizeof(struct pollfd));
+					(*final_fds)[new_nfds].fd = created_socket;
+					new_nfds ++;
 				}
-
-				// copy the info and set the fd as the new socket
-				memcpy(&(*final_fds)[new_nfds], &fds[index], sizeof(struct pollfd));
-				(*final_fds)[new_nfds].fd = created_socket;
-				new_nfds ++;
 			}
 		}
 	}
@@ -176,18 +186,21 @@ void remap_changes_to_initial_pollfd_table(int nfds, int final_nfds, struct poll
 		if (final_fds[index].revents > 0) // if something happened there
 		{
 			fd = final_fds[index].fd;
-			initial_socket = get_initial_socket_for_created_socket(fd);
-			if (initial_socket >= 0)
-			{	// fd was created by IPv6 CARE, set the flags on the initial socket
+			if (test_if_fd_is_a_network_socket(fd) == 1)
+			{
+				initial_socket = get_initial_socket_for_created_socket(fd);
+				if (initial_socket >= 0)
+				{	// fd was created by IPv6 CARE, set the flags on the initial socket
 
-				// first, find where is this initial socket in the table
-				for (index2 = 0; index2 < nfds; index2++)
-				{
-					if (final_fds[index2].fd == initial_socket)
+					// first, find where is this initial socket in the table
+					for (index2 = 0; index2 < nfds; index2++)
 					{
-						// then, OR its flags
-						initial_fds[index2].revents |= final_fds[index].revents;
-						break;
+						if (final_fds[index2].fd == initial_socket)
+						{
+							// then, OR its flags
+							initial_fds[index2].revents |= final_fds[index].revents;
+							break;
+						}
 					}
 				}
 			}
