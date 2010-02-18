@@ -36,8 +36,9 @@ Etienne DUBLE 	-3.0:	Creation
 #include "ipv6_to_ipv4_mappings.h"
 #include "utils.h"
 
-#ifndef IPV4_MAPPING_PREFIX
-#define IPV4_MAPPING_PREFIX "10.133"
+#ifndef IPV4_POOL_START
+#define IPV4_POOL_START "10.133.0.0"
+#define IPV4_POOL_END "10.133.255.255"
 #endif
 
 struct mapping_entry {
@@ -48,7 +49,7 @@ struct mapping_entry {
 LIST_HEAD(mapping_list_head_type, mapping_entry) mapping_list_head;
 
 int mapping_list_initialised = 0;
-int mapping_index = 0;
+unsigned int mapping_index = 0;
 
 void init_mapping_list_if_needed()
 {
@@ -59,23 +60,47 @@ void init_mapping_list_if_needed()
 	}
 }
 
+struct ipv4_pool_info {
+	unsigned int start;
+	unsigned int end;
+};
+
 void fill_mapping_data_for_ipv6_addr(struct polymorphic_addr *real_ipv6_pa, struct mapping_data *data)
 {
-	int my_index = mapping_index++; // this is considered atomic (in a multi-threaded program)
+	unsigned int my_index = mapping_index++; // this is considered atomic (in a multi-threaded program)
 	struct in_addr ipv4_addr;
 	int length;
+	static __thread struct ipv4_pool_info pool;
+	static __thread int pool_initialized = 0;
 
-	my_index %= 256*256; // avoid overflows...
+	if (pool_initialized == 0)
+	{
+		original_inet_aton(IPV4_POOL_START, &ipv4_addr);
+		pool.start = inet_lnaof(ipv4_addr);
+		original_inet_aton(IPV4_POOL_END, &ipv4_addr);
+		pool.end = inet_lnaof(ipv4_addr);
+		pool_initialized = 1;
+	}
+	
+	// detect overflows...
+	if (my_index > pool.end - pool.start)
+	{
+		printf("IPV6 CARE: IPV4 POOL OVERFLOW! YOU SHOULD DESACTIVATE IPV6 CARE.");
+		printf("IPV6 CARE: THIS PROCESS MAY SHOW UNEXPECTED BEHAVIORS IN NAME RESOLUTIONS FROM NOW ON!");
+		// maybe we are running a critical application, so we should not stop.
+		// let's get a correct value, even if it's already used...
+		my_index %= pool.end - pool.start + 1;
+	}
 
 	// pa[real_ipv6_addr]
 	memcpy(&data->pa[real_ipv6_addr], real_ipv6_pa, sizeof(*real_ipv6_pa));
 
-	// ip_text_forms[mapped_ipv4]
-	snprintf(data->ip_text_forms[mapped_ipv4], INET_ADDRSTRLEN, 
-			"%s.%d.%d", IPV4_MAPPING_PREFIX, my_index / 256, my_index % 256);
 	// pa[mapped_ipv4_addr]
-	original_inet_pton(AF_INET, data->ip_text_forms[mapped_ipv4], &ipv4_addr);
+	ipv4_addr = inet_makeaddr(INADDR_ANY, pool.start + my_index);
 	copy_ipv4_addr_to_pa(&ipv4_addr, &data->pa[mapped_ipv4_addr]);
+
+	// ip_text_forms[mapped_ipv4]
+	original_inet_ntop(AF_INET, &ipv4_addr, data->ip_text_forms[mapped_ipv4], INET_ADDRSTRLEN);
 
 	// ip_text_forms[full_ipv6]
 	original_inet_ntop(AF_INET6, &real_ipv6_pa->addr.ipv6_addr, data->ip_text_forms[full_ipv6], INET6_ADDRSTRLEN);

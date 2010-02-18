@@ -112,6 +112,10 @@ void remap_changes_to_initial_fdset(int nfds, fd_set *initial_fds, fd_set *final
 						FD_SET(initial_socket, &resulting_initial_fds);
 					}
 				}
+				else
+				{	// not a network socket => not managed by IPv6 CARE
+					FD_SET(fd, &resulting_initial_fds);
+				}
 			}
 		}
 

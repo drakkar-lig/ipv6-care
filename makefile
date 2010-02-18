@@ -38,7 +38,7 @@ VERSION=3.0
 
 PACKAGE_NAME="ipv6_care-$(VERSION)"
 ARCHITECTURE=$(shell uname -m)
-OPTIONS=-g -Wall -W -D_GNU_SOURCE -D_BSD_SOURCE
+OPTIONS=-g -Wall -W -D_GNU_SOURCE -D_BSD_SOURCE -fvisibility=internal
 
 list_objects=$(shell ls src/$(1)/*.c 2>/dev/null | sed -e "s/\.c/\.o/g" | sed -e "s/src/out/g") 
 

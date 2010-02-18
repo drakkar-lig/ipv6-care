@@ -58,6 +58,8 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 
 extern char *interpreter_name; 
 
+#pragma GCC visibility push(protected)
+
 // Start of the network-related functions overriden
 // ------------------------------------------------
 int accept(int socket, struct sockaddr *address,

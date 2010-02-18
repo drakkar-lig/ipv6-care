@@ -52,6 +52,8 @@ extern int h_errno;
 
 #define debug_print(...) // future use
 
+#pragma GCC visibility push(protected)
+
 // The functions which are following are redefining the ones of libc.
 // They are in alphabetical order.
 // Some of these functions call some others. So we first need to declare 
@@ -397,7 +399,7 @@ in_addr_t inet_addr(const char *cp)
 	}
 	else
 	{
-		result = ipv4_addr.s_addr;
+		result = htonl(ipv4_addr.s_addr);
 	}
 	
 	return result;
