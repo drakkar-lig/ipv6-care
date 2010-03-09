@@ -51,6 +51,7 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 #include "stack_tools.h"
 #include "common_networking_tools.h"
 #include "common_original_functions.h"
+#include "common_macros.h"
 
 
 #define INTERPRETER_MAX_SIZE	32
@@ -58,11 +59,9 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 
 extern char *interpreter_name; 
 
-#pragma GCC visibility push(protected)
-
 // Start of the network-related functions overriden
 // ------------------------------------------------
-int accept(int socket, struct sockaddr *address,
+PUBLIC_FUNCTION int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
 	if (test_if_fd_is_a_network_socket(socket) == 1)
@@ -77,7 +76,7 @@ int accept(int socket, struct sockaddr *address,
 	return original_accept(socket, address, address_len);
 }
 
-int bind(int socket, const struct sockaddr *address,
+PUBLIC_FUNCTION int bind(int socket, const struct sockaddr *address,
               socklen_t address_len)
 {
 	char ip[IP_MAX_SIZE];
@@ -98,7 +97,7 @@ int bind(int socket, const struct sockaddr *address,
 	return original_bind(socket, address, address_len);
 }
 
-int close(int fd)
+PUBLIC_FUNCTION int close(int fd)
 {
 	if (test_if_fd_is_a_network_socket(fd) == 1)
 	{
@@ -112,7 +111,7 @@ int close(int fd)
 	return original_close(fd);
 }
 
-int connect(int socket, const struct sockaddr *address,
+PUBLIC_FUNCTION int connect(int socket, const struct sockaddr *address,
               socklen_t address_len)
 {
 	char ip[IP_MAX_SIZE];
@@ -133,7 +132,7 @@ int connect(int socket, const struct sockaddr *address,
 	return original_connect(socket, address, address_len);
 }
 
-void freeaddrinfo(struct addrinfo *res)
+PUBLIC_FUNCTION void freeaddrinfo(struct addrinfo *res)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -144,7 +143,7 @@ void freeaddrinfo(struct addrinfo *res)
 	original_freeaddrinfo(res);
 }
 
-int getaddrinfo(const char *nodename,
+PUBLIC_FUNCTION int getaddrinfo(const char *nodename,
 		const char *servname,
 		const struct addrinfo *hints,
 		struct addrinfo **res)
@@ -205,7 +204,7 @@ int getaddrinfo(const char *nodename,
 	return original_getaddrinfo(nodename, servname, hints, res);
 }
 
-struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
+PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
 	char ip[IP_MAX_SIZE];
 
@@ -221,7 +220,7 @@ struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 	return original_gethostbyaddr(addr, len, type);
 }
 
-int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
+PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 			struct hostent *ret, char *buf, size_t buflen,
 			struct hostent **result, int *h_errnop)
 {
@@ -239,7 +238,7 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 	return original_gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop);
 }
 
-struct hostent *gethostbyname(const char *name)
+PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -251,7 +250,7 @@ struct hostent *gethostbyname(const char *name)
 	return original_gethostbyname(name);
 }
 
-int gethostbyname_r(const char *name,
+PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
@@ -273,7 +272,7 @@ int gethostbyname_r(const char *name,
 	return original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 }
 
-int getnameinfo(const struct sockaddr *sa, socklen_t salen,
+PUBLIC_FUNCTION int getnameinfo(const struct sockaddr *sa, socklen_t salen,
               char *node, socklen_t nodelen, char *service,
               socklen_t servicelen, unsigned int flags)
 {
@@ -294,7 +293,7 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 	return original_getnameinfo(sa, salen, node, nodelen, service, servicelen, flags);
 }
 
-int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+PUBLIC_FUNCTION int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -305,7 +304,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	return original_getpeername(sockfd, addr, addrlen);
 }
 
-int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+PUBLIC_FUNCTION int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -316,7 +315,7 @@ int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	return original_getsockname(sockfd, addr, addrlen);
 }
 
-in_addr_t inet_addr(const char *cp)
+PUBLIC_FUNCTION in_addr_t inet_addr(const char *cp)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -328,7 +327,7 @@ in_addr_t inet_addr(const char *cp)
 	return original_inet_addr(cp);
 }
 
-int inet_aton(const char *cp, struct in_addr *inp)
+PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -340,7 +339,7 @@ int inet_aton(const char *cp, struct in_addr *inp)
 	return original_inet_aton(cp, inp);
 }
 
-char *inet_ntoa(struct in_addr in)
+PUBLIC_FUNCTION char *inet_ntoa(struct in_addr in)
 {
 	char ip[IP_MAX_SIZE];
 	int port;
@@ -364,7 +363,7 @@ char *inet_ntoa(struct in_addr in)
 	return original_inet_ntoa(in);
 }
 
-const char *inet_ntop(int af, const void *src,
+PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src,
               char *dst, socklen_t size)
 {
 	char ip[IP_MAX_SIZE];
@@ -379,7 +378,7 @@ const char *inet_ntop(int af, const void *src,
 	return original_inet_ntop(af, src, dst, size);
 }
 
-int inet_pton(int af, const char *src, void *dst)
+PUBLIC_FUNCTION int inet_pton(int af, const char *src, void *dst)
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -391,7 +390,7 @@ int inet_pton(int af, const char *src, void *dst)
 	return original_inet_pton(af, src, dst);
 }
 
-int listen(int socket, int backlog)
+PUBLIC_FUNCTION int listen(int socket, int backlog)
 {
 	if (test_if_fd_is_a_network_socket(socket) == 1)
 	{
@@ -406,7 +405,7 @@ int listen(int socket, int backlog)
 	return original_listen(socket, backlog);
 }
 
-int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
@@ -420,7 +419,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	return original_poll(fds, nfds, timeout);
 }
 
-int ppoll(struct pollfd *fds, nfds_t nfds,
+PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
                const struct timespec *timeout, const sigset_t *sigmask)
 {
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
@@ -435,7 +434,7 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
 	return original_ppoll(fds, nfds, timeout, sigmask);
 }
 
-int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
@@ -450,7 +449,7 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return original_pselect(nfds, readfds, writefds, errorfds, timeout, sigmask);
 }
 
-int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
@@ -465,7 +464,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return original_select(nfds, readfds, writefds, errorfds, timeout);
 }
 
-int setsockopt(int socket, int level, int option_name,
+PUBLIC_FUNCTION int setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len)
 {
 	int value;
@@ -485,7 +484,7 @@ int setsockopt(int socket, int level, int option_name,
 	return original_setsockopt(socket, level, option_name, option_value, option_len);
 }
 
-int socket(int domain, int type, int protocol)
+PUBLIC_FUNCTION int socket(int domain, int type, int protocol)
 {
 	if ((domain == AF_INET)||(domain == AF_INET6))
 	{

@@ -35,7 +35,15 @@
 # Etienne DUBLE 	-2.5:	Manage IPV6_CARE_DEBUG_TOOL env variable
 # Etienne DUBLE 	-2.5:	Removed option -o
 # Etienne DUBLE 	-2.5:	Variable PATCH_MODE_ENABLED
+# Etienne DUBLE 	-3.0:	Autotools set up
 # 
+
+# needed autotools variables
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+bindir=@bindir@
+# end needed autotools variables
 
 PATCH_MODE_ENABLED=1
 
@@ -46,30 +54,14 @@ then
 	COLUMNS=70
 fi
 
-# check where is libipv6_care_checking.so
-path_to_scripts=$(cd $(dirname "$0"); pwd)
-if [ "$path_to_scripts" = "/usr/bin" ]
-then	# package was installed in system standard locations
-	path_to_libraries="/usr/lib"
-else	# package was not installed (no 'make install') 
-	# and the script of the installation directory was called using
-	# '<path_to_scripts_subdirectory>/ipv6_care'
-
-	# make available the other scripts
-	export PATH="$path_to_scripts:$PATH"
-
-	# the path to the libraries
-	path_to_libraries="$path_to_scripts/../out"
-fi
-
 this_program=$(basename $0)
 
 GREEN="\033[32;1m"
 RED="\033[31;1m"
 ENDCOLOR="\033[0m"
 
-checking_library="$path_to_libraries/libipv6_care_checking.so"
-patching_library="$path_to_libraries/libipv6_care_patching.so"
+checking_library="$libdir/libipv6_care_checking.so"
+patching_library="$libdir/libipv6_care_patching.so"
 
 if [ ! -f "$checking_library" ]
 then
@@ -204,7 +196,7 @@ case "$1" in
 
 		# format the command line
 		program_to_test="$(
-			source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
+			source "$bindir/IPv6_CARE_protect_arguments.sh"
 		)"
 
 		# check that it seems ok
@@ -290,7 +282,7 @@ case "$1" in
 		then
 			# format the command line
 			program_to_patch="$(
-				source "$path_to_scripts/IPv6_CARE_protect_arguments.sh"
+				source "$bindir/IPv6_CARE_protect_arguments.sh"
 			)"
 
 			# check that it seems ok

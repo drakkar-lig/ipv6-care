@@ -32,6 +32,12 @@ Etienne DUBLE 	- 3.0: 	Creation
 
 extern __thread int function_depth;
 
+#if HAVE_VISIBILITY
+#define PUBLIC_FUNCTION __attribute__((__visibility__("default")))
+#else
+#define PUBLIC_FUNCTION
+#endif
+
 /* The PP_NARG macro returns the number of arguments that have been
  * passed to it. 
  * (Idea from Laurent Deniau 

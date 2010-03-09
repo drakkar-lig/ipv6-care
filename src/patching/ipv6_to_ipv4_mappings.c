@@ -35,11 +35,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include "common_original_functions.h"
 #include "ipv6_to_ipv4_mappings.h"
 #include "utils.h"
-
-#ifndef IPV4_POOL_START
-#define IPV4_POOL_START "10.133.0.0"
-#define IPV4_POOL_END "10.133.255.255"
-#endif
+#include "common_macros.h"
 
 struct mapping_entry {
 	struct mapping_data data;
@@ -75,9 +71,9 @@ void fill_mapping_data_for_ipv6_addr(struct polymorphic_addr *real_ipv6_pa, stru
 
 	if (pool_initialized == 0)
 	{
-		original_inet_aton(IPV4_POOL_START, &ipv4_addr);
+		original_inet_aton(stringified(IPV4_POOL_START), &ipv4_addr);
 		pool.start = inet_lnaof(ipv4_addr);
-		original_inet_aton(IPV4_POOL_END, &ipv4_addr);
+		original_inet_aton(stringified(IPV4_POOL_END), &ipv4_addr);
 		pool.end = inet_lnaof(ipv4_addr);
 		pool_initialized = 1;
 	}

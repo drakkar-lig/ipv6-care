@@ -35,6 +35,7 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 
 #include "fd_tools.h"
 #include "common_networking_tools.h"
+#include "common_macros.h"
 #include "address_name_matches.h"
 #include "common_original_functions.h"
 #include "ipv6_to_ipv4_mappings.h"
@@ -52,16 +53,14 @@ extern int h_errno;
 
 #define debug_print(...) // future use
 
-#pragma GCC visibility push(protected)
-
 // The functions which are following are redefining the ones of libc.
 // They are in alphabetical order.
 // Some of these functions call some others. So we first need to declare 
 // a few prototypes here for the functions which are called before they are defined.
-int inet_aton(const char *cp, struct in_addr *inp);
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp);
+PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
-int accept(int socket, struct sockaddr *address,
+PUBLIC_FUNCTION int accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
 	int new_socket_created, resulting_socket, communication_socket, 
@@ -106,7 +105,7 @@ int accept(int socket, struct sockaddr *address,
 	return communication_socket;
 }
 
-int bind(int socket, const struct sockaddr *address,
+PUBLIC_FUNCTION int bind(int socket, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
@@ -122,7 +121,7 @@ int bind(int socket, const struct sockaddr *address,
 	return result;
 }
 
-int close(int fd)
+PUBLIC_FUNCTION int close(int fd)
 {
 	int result;
 
@@ -147,7 +146,7 @@ int close(int fd)
 	return result;
 }
 
-int connect(int s, const struct sockaddr *address,
+PUBLIC_FUNCTION int connect(int s, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
@@ -205,7 +204,7 @@ int connect(int s, const struct sockaddr *address,
 	return connect_call_result;
 }
 
-int getaddrinfo(const char *nodename,
+PUBLIC_FUNCTION int getaddrinfo(const char *nodename,
 		const char *servname,
 		const struct addrinfo *hints,
 		struct addrinfo **res)
@@ -225,7 +224,7 @@ int getaddrinfo(const char *nodename,
 */	return result;
 }
 
-struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
+PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 {
 	static __thread struct hostent result;
 	static __thread int buflen = 0;
@@ -260,7 +259,7 @@ struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
 	return function_result;
 }
 
-int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
+PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 			struct hostent *ret, char *buf, size_t buflen,
 			struct hostent **result, int *h_errnop)
 {
@@ -280,7 +279,7 @@ int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 	}
 }
 
-struct hostent *gethostbyname(const char *name)
+PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
 {
 	static __thread struct hostent result;
 	static __thread int buflen = 0;
@@ -316,7 +315,7 @@ struct hostent *gethostbyname(const char *name)
 	return function_result;
 }
 
-int gethostbyname_r(const char *name,
+PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
@@ -359,7 +358,7 @@ int gethostbyname_r(const char *name,
 	return function_result;
 }
 
-int getnameinfo(const struct sockaddr *sa, socklen_t salen,
+PUBLIC_FUNCTION int getnameinfo(const struct sockaddr *sa, socklen_t salen,
               char *node, socklen_t nodelen, char *service,
               socklen_t servicelen, unsigned int flags)
 {
@@ -374,17 +373,17 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 */	return result;
 }
 
-int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+PUBLIC_FUNCTION int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	return getxxxxname(sockfd, addr, addrlen, original_getpeername);
 }
 
-int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+PUBLIC_FUNCTION int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	return getxxxxname(sockfd, addr, addrlen, original_getsockname);
 }
 
-in_addr_t inet_addr(const char *cp) 
+PUBLIC_FUNCTION in_addr_t inet_addr(const char *cp) 
 {
 	in_addr_t result;
 	struct in_addr ipv4_addr;
@@ -405,7 +404,7 @@ in_addr_t inet_addr(const char *cp)
 	return result;
 }
 
-int inet_aton(const char *cp, struct in_addr *inp)
+PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp)
 {
 	int result;
 	char *text_ip;
@@ -425,14 +424,14 @@ int inet_aton(const char *cp, struct in_addr *inp)
 	return result;
 }
 
-char *inet_ntoa(struct in_addr in)
+PUBLIC_FUNCTION char *inet_ntoa(struct in_addr in)
 {
 	static __thread char buffer[INET6_ADDRSTRLEN];
 	// call the modified inet_ntop below
 	return (char *)inet_ntop(AF_INET, (const void *)&in, buffer, INET6_ADDRSTRLEN);
 }
 
-const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
 	struct polymorphic_addr pa;
 	struct mapping_data *mapping_data;
@@ -477,7 +476,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 	return result;
 }
 
-int inet_pton(int af, const char *src, void *dst)
+PUBLIC_FUNCTION int inet_pton(int af, const char *src, void *dst)
 {
 	if (af == AF_INET)
 	{	// call the modified inet_aton (see above)
@@ -489,7 +488,7 @@ int inet_pton(int af, const char *src, void *dst)
 	}
 }
 
-int listen(int sockfd, int backlog)
+PUBLIC_FUNCTION int listen(int sockfd, int backlog)
 {
 	int result;
 
@@ -503,7 +502,7 @@ int listen(int sockfd, int backlog)
 	return result;
 }
 
-int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	struct pollfd *final_fds;
 	int final_nfds, result;
@@ -523,7 +522,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	return result;
 }
 
-int ppoll(struct pollfd *fds, nfds_t nfds,
+PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
                const struct timespec *timeout, const sigset_t *sigmask)
 {
 	struct pollfd *final_fds;
@@ -544,7 +543,7 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
 	return result;
 }
 
-int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {
 	int result;
@@ -565,7 +564,7 @@ int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return result;
 }
 
-int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
 	int result;
@@ -586,7 +585,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	return result;
 }
 
-int setsockopt(int sockfd, int level, int optname,
+PUBLIC_FUNCTION int setsockopt(int sockfd, int level, int optname,
                       const void *optval, socklen_t optlen)
 {
 	int created_socket, result;
@@ -623,7 +622,7 @@ int setsockopt(int sockfd, int level, int optname,
 	return result;
 }
 
-int socket(int domain, int type, int protocol)
+PUBLIC_FUNCTION int socket(int domain, int type, int protocol)
 {
 	int fd;
 
