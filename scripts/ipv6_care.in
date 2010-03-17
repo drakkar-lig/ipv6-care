@@ -292,7 +292,7 @@ case "$1" in
 				exit
 			fi
 
-			LD_PRELOAD="$patching_library" eval "$program_to_patch"
+			LD_PRELOAD="$patching_library" eval "$IPV6_CARE_DEBUG_TOOL $program_to_patch"
 		else
 			print_usage
 			exit
@@ -333,7 +333,7 @@ case "$1" in
 				then
 					if [ "$(grep "$patching_library" /etc/ld.so.preload | wc -l)" -gt 0 ]
 					then
-						escaped_patching_library=$(echo /usr/lib/libipv6_care_patching.so | sed -e 's/\//\\\//g')
+						escaped_patching_library=$(echo "$patching_library" | sed -e 's/\//\\\//g')
 						updated_content=$(cat /etc/ld.so.preload | sed -e "s/[:space:]*$escaped_patching_library//g")
 						echo "$updated_content" > /etc/ld.so.preload
 						echo -e "System patch-mode was [on]. It is now [${GREEN}off${ENDCOLOR}]."
@@ -342,7 +342,7 @@ case "$1" in
 				fi
 				if [ "$patch_mode_was" = "off" ]
 				then
-					echo " /usr/lib/libipv6_care_patching.so" >> /etc/ld.so.preload
+					echo " $patching_library" >> /etc/ld.so.preload
 					echo -e "System patch-mode was [off]. It is now [${GREEN}on${ENDCOLOR}]."
 					echo -e "${RED}CAUTION${ENDCOLOR}: Patch-mode is activated for all programs you start from now on!"
 					echo -e "         If you restart the operating system, it will be also true for all programs run at startup!"

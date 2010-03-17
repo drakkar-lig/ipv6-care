@@ -81,8 +81,8 @@ void fill_mapping_data_for_ipv6_addr(struct polymorphic_addr *real_ipv6_pa, stru
 	// detect overflows...
 	if (my_index > pool.end - pool.start)
 	{
-		printf("IPV6 CARE: IPV4 POOL OVERFLOW! YOU SHOULD DESACTIVATE IPV6 CARE.");
-		printf("IPV6 CARE: THIS PROCESS MAY SHOW UNEXPECTED BEHAVIORS IN NAME RESOLUTIONS FROM NOW ON!");
+		printf("IPV6 CARE: IPV4 POOL OVERFLOW! YOU SHOULD DESACTIVATE IPV6 CARE.\n");
+		printf("IPV6 CARE: THIS PROCESS MAY SHOW UNEXPECTED BEHAVIORS IN NAME RESOLUTIONS FROM NOW ON!\n");
 		// maybe we are running a critical application, so we should not stop.
 		// let's get a correct value, even if it's already used...
 		my_index %= pool.end - pool.start + 1;

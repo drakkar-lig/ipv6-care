@@ -1,6 +1,6 @@
 #!/bin/bash
 
-files="src/checking/overwritten_functions.c src/common/original_functions.c src/patching/socket_info.c"
+files="src/checking/overwritten_functions.c src/common/common_original_functions.c src/patching/socket_info.c"
 
 save_files()
 {
@@ -27,7 +27,8 @@ restore_files()
 }
 
 save_files $files
-make
+make clean
+make CFLAGS="-O0 -g"
 sudo make install
 echo -n "DO THE DEBUG THEN PRESS <ENTER>... "
 read a

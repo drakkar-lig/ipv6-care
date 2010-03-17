@@ -96,11 +96,16 @@ void init_socket_info_list_if_needed()
 struct socket_data *get_socket_info (int fd)
 {
 	struct socket_info_entry *entry;
-	static __thread struct socket_data *result;
+	struct socket_data *result;
+#ifdef BUGGY_OPTIMISATION
+	// This optimisation causes a segfault and valgrind detects many errors, when patching NTP.
+	// I don't know why. I let the code in place for future reference.
+	static __thread struct socket_data *last_result = NULL;
 	static __thread int last_fd = -1;
 
 	if (fd != last_fd) // optimization in the case of several operations on the same fd
 	{
+#endif
 		init_socket_info_list_if_needed ();
 
 		result = NULL;
@@ -117,13 +122,21 @@ struct socket_data *get_socket_info (int fd)
 		{	// socket not known yet, register it
 			entry = calloc (1, sizeof (struct socket_info_entry));
 			entry->data.fd = fd;
+			entry->data.flag_data_registered = 0;
 			LIST_INSERT_HEAD(&socket_info_list_head, entry, entries);
 				
 			result = &entry->data;
 		}
 
+#ifdef BUGGY_OPTIMISATION
 		last_fd = fd;
+		last_result = result;
 	}
+	else
+	{
+		result = last_result;
+	}
+#endif
 	return result;
 }
 
@@ -222,11 +235,11 @@ void compute_bound_interface (int fd __attribute__ ((unused)), struct socket_dat
 	memset(&data->bound_interface, 0, sizeof(data->bound_interface));
 }
 
-#define indirection_in_get0	*
-#define indirection_in_get1
+#define indirection_in_get0	
+#define indirection_in_get1	&
 #define indirection_in_get(_type_is_pointer)	indirection_in_get ## _type_is_pointer
 
-#define __define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer) 	\
+#define __define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_location) 	\
 _type get_ ## _suffix (int fd)								\
 {											\
   struct socket_data *data;								\
@@ -236,41 +249,39 @@ _type get_ ## _suffix (int fd)								\
       compute_ ## _suffix (fd, data);							\
       data->flag_data_registered |= _flag;						\
     }											\
-  return indirection_in_get(_type_is_pointer)(_data_pointer);				\
+  return indirection_in_get(_type_is_pointer)_data_location;				\
 }
 	
 
-#define indirection_in_register0	&
-#define indirection_in_register1
-#define indirection_in_register(_type_is_pointer)	indirection_in_register ## _type_is_pointer
+#define copy_value0(_data_location, value)	_data_location = value
+#define copy_value1(_data_location, value)	memcpy(&_data_location, value, sizeof (_data_location))
+#define copy_value(_type_is_pointer, _data_location, value)	copy_value ## _type_is_pointer(_data_location, value)
 
-#define __define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)	\
+#define __define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_location)	\
 void register_ ## _suffix (int fd, _type value)							\
 {												\
   struct socket_data *data;									\
   data = get_socket_info (fd);									\
-  memcpy (	_data_pointer, 									\
-  		indirection_in_register(_type_is_pointer)value, 				\
-		sizeof (*(_data_pointer)));							\
+  copy_value(_type_is_pointer, _data_location, value);						\
   data->flag_data_registered |= _flag;								\
 }
 
 
-#define __define_get_and_register_functions(_suffix, _type, _type_is_pointer, _flag, _data_pointer)  	\
-__define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)				\
-__define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_pointer)
+#define __define_get_and_register_functions(_suffix, _type, _type_is_pointer, _flag, _data_location)  	\
+__define_get_function(_suffix, _type, _type_is_pointer, _flag, _data_location)				\
+__define_register_function(_suffix, _type, _type_is_pointer, _flag, _data_location)
 
-__define_get_and_register_functions(socket_type, int, 0, FLAG_DATA_REGISTERED_SOCKET_TYPE, &data->type)
-__define_get_and_register_functions(socket_state, enum socket_state, 0, FLAG_DATA_REGISTERED_SOCKET_STATE, &data->state)
-__define_get_and_register_functions(socket_protocol, int, 0, FLAG_DATA_REGISTERED_SOCKET_PROTOCOL, &data->protocol)
+__define_get_and_register_functions(socket_type, int, 0, FLAG_DATA_REGISTERED_SOCKET_TYPE, data->type)
+__define_get_and_register_functions(socket_state, enum socket_state, 0, FLAG_DATA_REGISTERED_SOCKET_STATE, data->state)
+__define_get_and_register_functions(socket_protocol, int, 0, FLAG_DATA_REGISTERED_SOCKET_PROTOCOL, data->protocol)
 __define_get_and_register_functions(listening_socket_backlog, int, 0, FLAG_DATA_REGISTERED_SOCKET_BACKLOG, 
-						&data->data_per_state.listening.backlog)
+						data->data_per_state.listening.backlog)
 __define_get_and_register_functions(listening_socket_v6only_option, int, 0, FLAG_DATA_REGISTERED_V6ONLY_OPTION, 
-						&data->data_per_state.listening.v6only_option)
+						data->data_per_state.listening.v6only_option)
 __define_get_and_register_functions(local_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_LOCAL_ADDRESS, 
-						&data->local_address)
+						data->local_address)
 __define_get_and_register_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_REMOTE_ADDRESS, 
-						&data->data_per_state.communicating.remote_address)
+						data->data_per_state.communicating.remote_address)
 __define_get_and_register_functions(bound_interface, struct ifreq *, 1, FLAG_DATA_REGISTERED_BOUND_INTERFACE, 
-						&data->bound_interface)
+						data->bound_interface)
 

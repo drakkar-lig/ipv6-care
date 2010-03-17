@@ -73,7 +73,10 @@ extern __thread int function_depth;
 #define GET_SYMBOL_COUNT_ARGS(...)	get_symbol(PP_NARG(__VA_ARGS__), __VA_ARGS__) 
 #define RESULT(x)	x
 
-#define stringified(x) #x
+// in some cases two levels of macros are needed 
+// (http://gcc.gnu.org/onlinedocs/cpp/Stringification.html)
+#define _stringified(x) #x
+#define stringified(x) _stringified(x)
 
 // the construction with 'static' below is an optimisation which avoids
 // to look several times for the same symbol.

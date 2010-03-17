@@ -468,7 +468,7 @@ PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, sockle
 		result = original_inet_ntop(af, src, dst, size);
 	}
 
-	if (result != NULL)
+	if ((result != NULL) && (dst != result))
 	{
 		strcpy(dst, result);
 	}
@@ -506,6 +506,7 @@ PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	struct pollfd *final_fds;
 	int final_nfds, result;
+	int saved_errno;
 
 	// indicate to manage_socket_accesses_on_pollfd_table that no allocation has been done yet
 	final_fds = NULL;
@@ -513,12 +514,14 @@ PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	manage_socket_accesses_on_pollfd_table(nfds, &final_nfds, fds, &final_fds);
 
 	result = original_poll(final_fds, final_nfds, timeout);
+	saved_errno = errno;
 
 	remap_changes_to_initial_pollfd_table(nfds, final_nfds, fds, final_fds);
 
 	// free memory
 	final_fds = realloc(final_fds, 0);
 
+	errno = saved_errno; // in case it would have changed
 	return result;
 }
 
@@ -527,6 +530,7 @@ PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
 {
 	struct pollfd *final_fds;
 	int final_nfds, result;
+	int saved_errno;
 
 	// indicate to manage_socket_accesses_on_pollfd_table that no allocation has been done yet
 	final_fds = NULL;
@@ -534,12 +538,14 @@ PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
 	manage_socket_accesses_on_pollfd_table(nfds, &final_nfds, fds, &final_fds);
 
 	result = original_ppoll(final_fds, final_nfds, timeout, sigmask);
+	saved_errno = errno;
 
 	remap_changes_to_initial_pollfd_table(nfds, final_nfds, fds, final_fds);
 
 	// free memory
 	final_fds = realloc(final_fds, 0);
 
+	errno = saved_errno; // in case it would have changed
 	return result;
 }
 
@@ -549,6 +555,7 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 	int result;
 	fd_set final_readfds, final_writefds, final_errorfds;
 	int modifiable_nfds;
+	int saved_errno;
 
 	modifiable_nfds = nfds;
 
@@ -557,10 +564,13 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 	manage_socket_accesses_on_fdset(&modifiable_nfds, errorfds, &final_errorfds);
 
 	result = original_pselect(modifiable_nfds, &final_readfds, &final_writefds, &final_errorfds, timeout, sigmask);
+	saved_errno = errno;
 
 	remap_changes_to_initial_fdset(modifiable_nfds, readfds, &final_readfds);
 	remap_changes_to_initial_fdset(modifiable_nfds, writefds, &final_writefds);
 	remap_changes_to_initial_fdset(modifiable_nfds, errorfds, &final_errorfds);
+
+	errno = saved_errno; // in case it would have changed
 	return result;
 }
 
@@ -570,6 +580,7 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 	int result;
 	fd_set final_readfds, final_writefds, final_errorfds;
 	int modifiable_nfds;
+	int saved_errno;
 	
 	modifiable_nfds = nfds;
 
@@ -578,10 +589,13 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 	manage_socket_accesses_on_fdset(&modifiable_nfds, errorfds, &final_errorfds);
 
 	result = original_select(modifiable_nfds, &final_readfds, &final_writefds, &final_errorfds, timeout);
+	saved_errno = errno;
 
 	remap_changes_to_initial_fdset(modifiable_nfds, readfds, &final_readfds);
 	remap_changes_to_initial_fdset(modifiable_nfds, writefds, &final_writefds);
 	remap_changes_to_initial_fdset(modifiable_nfds, errorfds, &final_errorfds);
+
+	errno = saved_errno; // in case it would have changed
 	return result;
 }
 
