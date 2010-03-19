@@ -48,6 +48,7 @@ Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
 #include "select_and_poll.h"
 #include "getxxxxname.h"
 #include "ipv6_aware_or_agnostic.h"
+#include "manage_hooks.h"
 
 extern int h_errno;
 
@@ -57,10 +58,10 @@ extern int h_errno;
 // They are in alphabetical order.
 // Some of these functions call some others. So we first need to declare 
 // a few prototypes here for the functions which are called before they are defined.
-PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp);
-PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
+int overwritten_inet_aton(const char *cp, struct in_addr *inp);
+const char *overwritten_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 
-PUBLIC_FUNCTION int accept(int socket, struct sockaddr *address,
+int overwritten_accept(int socket, struct sockaddr *address,
               socklen_t *address_len)
 {
 	int new_socket_created, resulting_socket, communication_socket, 
@@ -105,7 +106,7 @@ PUBLIC_FUNCTION int accept(int socket, struct sockaddr *address,
 	return communication_socket;
 }
 
-PUBLIC_FUNCTION int bind(int socket, const struct sockaddr *address,
+int overwritten_bind(int socket, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
@@ -121,7 +122,7 @@ PUBLIC_FUNCTION int bind(int socket, const struct sockaddr *address,
 	return result;
 }
 
-PUBLIC_FUNCTION int close(int fd)
+int overwritten_close(int fd)
 {
 	int result;
 
@@ -146,7 +147,7 @@ PUBLIC_FUNCTION int close(int fd)
 	return result;
 }
 
-PUBLIC_FUNCTION int connect(int s, const struct sockaddr *address,
+int overwritten_connect(int s, const struct sockaddr *address,
               socklen_t address_len)
 {
 	int result;
@@ -204,7 +205,7 @@ PUBLIC_FUNCTION int connect(int s, const struct sockaddr *address,
 	return connect_call_result;
 }
 
-PUBLIC_FUNCTION int getaddrinfo(const char *nodename,
+int overwritten_getaddrinfo(const char *nodename,
 		const char *servname,
 		const struct addrinfo *hints,
 		struct addrinfo **res)
@@ -224,7 +225,7 @@ PUBLIC_FUNCTION int getaddrinfo(const char *nodename,
 */	return result;
 }
 
-PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)
+struct hostent *overwritten_gethostbyaddr(const void *addr, socklen_t len, int type)
 {
 	static __thread struct hostent result;
 	static __thread int buflen = 0;
@@ -240,7 +241,7 @@ PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, i
 		buflen *= 2;
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyaddr_r function below
-		gethostbyaddr_r_result = gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &h_errno);
+		gethostbyaddr_r_result = overwritten_gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &h_errno);
 		if (gethostbyaddr_r_result == 0)
 		{
 			done = 1;
@@ -259,7 +260,7 @@ PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, i
 	return function_result;
 }
 
-PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
+int overwritten_gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 			struct hostent *ret, char *buf, size_t buflen,
 			struct hostent **result, int *h_errnop)
 {
@@ -279,7 +280,11 @@ PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 	}
 }
 
-PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
+/* Some systems return EINVAL instead of ERANGE when the following 
+   is set really too low - don't touch it! */
+#define INITIAL_BUFLEN	128
+
+struct hostent *overwritten_gethostbyname(const char *name)
 {
 	static __thread struct hostent result;
 	static __thread int buflen = 0;
@@ -288,14 +293,19 @@ PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
 	struct hostent *function_result;
 	int gethostbyname_r_result;
 
+	if (buflen == 0)
+	{
+		buflen = INITIAL_BUFLEN;
+		buf = malloc(buflen);
+	}
+
 	while(done == 0)
 	{
-		buflen += 10;
 		buflen *= 2;
 		debug_print(1, "buflen = %d\n", buflen);
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyname_r function below
-		gethostbyname_r_result = gethostbyname_r(name, &result, buf, buflen, &function_result, &h_errno);
+		gethostbyname_r_result = overwritten_gethostbyname_r(name, &result, buf, buflen, &function_result, &h_errno);
 		debug_print(1, "gethostbyname_r returned: %d, %d, %d\n", gethostbyname_r_result, h_errno, errno);
 		if (gethostbyname_r_result == 0)
 		{
@@ -315,7 +325,7 @@ PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
 	return function_result;
 }
 
-PUBLIC_FUNCTION int gethostbyname_r(const char *name,
+int overwritten_gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
@@ -325,7 +335,7 @@ PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 	saved_errno = errno;
 	debug_print(1, "original_gethostbyname_r returned: %d, %d, %d\n", function_result, *h_errnop, errno);
-	if ((result != NULL)&&(*result == NULL))
+	if ((function_result != ERANGE)&&(result != NULL)&&(*result == NULL))
 	{
 		if (	(h_errnop != NULL)&& 
 			((*h_errnop == HOST_NOT_FOUND)||(*h_errnop == NO_ADDRESS)||
@@ -358,7 +368,7 @@ PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 	return function_result;
 }
 
-PUBLIC_FUNCTION int getnameinfo(const struct sockaddr *sa, socklen_t salen,
+int overwritten_getnameinfo(const struct sockaddr *sa, socklen_t salen,
               char *node, socklen_t nodelen, char *service,
               socklen_t servicelen, unsigned int flags)
 {
@@ -373,24 +383,24 @@ PUBLIC_FUNCTION int getnameinfo(const struct sockaddr *sa, socklen_t salen,
 */	return result;
 }
 
-PUBLIC_FUNCTION int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+int overwritten_getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	return getxxxxname(sockfd, addr, addrlen, original_getpeername);
 }
 
-PUBLIC_FUNCTION int getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+int overwritten_getsockname(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	return getxxxxname(sockfd, addr, addrlen, original_getsockname);
 }
 
-PUBLIC_FUNCTION in_addr_t inet_addr(const char *cp) 
+in_addr_t overwritten_inet_addr(const char *cp) 
 {
 	in_addr_t result;
 	struct in_addr ipv4_addr;
 	int conversion_result;
 
 	// call the modified version of inet_aton below
-	conversion_result = inet_aton(cp, &ipv4_addr);
+	conversion_result = overwritten_inet_aton(cp, &ipv4_addr);
 
 	if (conversion_result == 0)
 	{
@@ -404,7 +414,7 @@ PUBLIC_FUNCTION in_addr_t inet_addr(const char *cp)
 	return result;
 }
 
-PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp)
+int overwritten_inet_aton(const char *cp, struct in_addr *inp)
 {
 	int result;
 	char *text_ip;
@@ -424,14 +434,14 @@ PUBLIC_FUNCTION int inet_aton(const char *cp, struct in_addr *inp)
 	return result;
 }
 
-PUBLIC_FUNCTION char *inet_ntoa(struct in_addr in)
+char *overwritten_inet_ntoa(struct in_addr in)
 {
 	static __thread char buffer[INET6_ADDRSTRLEN];
 	// call the modified inet_ntop below
-	return (char *)inet_ntop(AF_INET, (const void *)&in, buffer, INET6_ADDRSTRLEN);
+	return (char *)overwritten_inet_ntop(AF_INET, (const void *)&in, buffer, INET6_ADDRSTRLEN);
 }
 
-PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
+const char *overwritten_inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
 	struct polymorphic_addr pa;
 	struct mapping_data *mapping_data;
@@ -476,11 +486,11 @@ PUBLIC_FUNCTION const char *inet_ntop(int af, const void *src, char *dst, sockle
 	return result;
 }
 
-PUBLIC_FUNCTION int inet_pton(int af, const char *src, void *dst)
+int overwritten_inet_pton(int af, const char *src, void *dst)
 {
 	if (af == AF_INET)
 	{	// call the modified inet_aton (see above)
-		return inet_aton(src, (struct in_addr *)dst);
+		return overwritten_inet_aton(src, (struct in_addr *)dst);
 	}
 	else
 	{
@@ -488,7 +498,7 @@ PUBLIC_FUNCTION int inet_pton(int af, const char *src, void *dst)
 	}
 }
 
-PUBLIC_FUNCTION int listen(int sockfd, int backlog)
+int overwritten_listen(int sockfd, int backlog)
 {
 	int result;
 
@@ -502,7 +512,7 @@ PUBLIC_FUNCTION int listen(int sockfd, int backlog)
 	return result;
 }
 
-PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+int overwritten_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	struct pollfd *final_fds;
 	int final_nfds, result;
@@ -525,7 +535,7 @@ PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	return result;
 }
 
-PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
+int overwritten_ppoll(struct pollfd *fds, nfds_t nfds,
                const struct timespec *timeout, const sigset_t *sigmask)
 {
 	struct pollfd *final_fds;
@@ -549,7 +559,7 @@ PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
 	return result;
 }
 
-PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+int overwritten_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       const struct timespec *timeout, const sigset_t *sigmask)
 {
 	int result;
@@ -574,7 +584,7 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 	return result;
 }
 
-PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
+int overwritten_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
 	int result;
@@ -599,7 +609,7 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 	return result;
 }
 
-PUBLIC_FUNCTION int setsockopt(int sockfd, int level, int optname,
+int overwritten_setsockopt(int sockfd, int level, int optname,
                       const void *optval, socklen_t optlen)
 {
 	int created_socket, result;
@@ -636,7 +646,7 @@ PUBLIC_FUNCTION int setsockopt(int sockfd, int level, int optname,
 	return result;
 }
 
-PUBLIC_FUNCTION int socket(int domain, int type, int protocol)
+int overwritten_socket(int domain, int type, int protocol)
 {
 	int fd;
 
