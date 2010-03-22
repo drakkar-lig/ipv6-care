@@ -37,5 +37,5 @@ Etienne DUBLE 	-3.0:	Creation
 #include "list_of_hooks.h"
 #undef HOOK
 
-extern enum hook_status hooks_status;
+extern __thread enum hook_status hooks_status;
 #endif

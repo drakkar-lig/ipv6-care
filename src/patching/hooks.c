@@ -29,6 +29,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include "common_original_functions.h"
 #include "hook_status.h"
 
+// global variables
 #define HOOK(func, proto, params) 						\
 	typeof(overwritten_ ## func) *func ## _hook[2] = { 			\
 		&original_ ## func,						\
@@ -36,4 +37,5 @@ Etienne DUBLE 	-3.0:	Creation
 #include "list_of_hooks.h"
 #undef HOOK
 
-enum hook_status hooks_status = hook_status_enabled;
+// per-thread variables
+__thread enum hook_status hooks_status = hook_status_enabled;

@@ -26,6 +26,8 @@ Etienne DUBLE 	-3.0:	Creation
 
 */
 
+//#include <stdio.h>
+
 #include "common_macros.h"
 #include "manage_hooks.h"
 #include "hooks.h"
@@ -38,12 +40,14 @@ PUBLIC_FUNCTION prototype							\
 	if (hooks_status == hook_status_enabled)				\
 	{									\
 		disable_all_hooks();						\
-/*              printf("Function %s detected.\n", stringified(name));*/         \
+		/*printf("Function %s detected.\n", stringified(name));*/	\
 		__result = (* name ## _hook[hook_status_enabled])parameters;	\
+		/*printf("Function %s done.\n", stringified(name));*/		\
 		enable_all_hooks();						\
 	}									\
 	else									\
 	{									\
+		/*printf("Function %s CALLED DIRECTLY.\n", stringified(name));*/\
 		__result = (* name ## _hook[hook_status_disabled])parameters;	\
 	}									\
 	return __result;							\

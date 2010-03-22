@@ -25,15 +25,18 @@ Last modifications:
 Etienne DUBLE 	-3.0:	Creation
 
 */
+//#include <stdio.h>
 #include "hooks.h"
 
 void enable_all_hooks()
 {
+	//printf("enabling hooks\n");
 	hooks_status = hook_status_enabled;
 }
 
 void disable_all_hooks()
 {
+	//printf("disabling hooks\n");
 	hooks_status = hook_status_disabled;
 }
 
