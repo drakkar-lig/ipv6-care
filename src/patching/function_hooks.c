@@ -38,6 +38,7 @@ PUBLIC_FUNCTION prototype							\
 	if (hooks_status == hook_status_enabled)				\
 	{									\
 		disable_all_hooks();						\
+/*              printf("Function %s detected.\n", stringified(name));*/         \
 		__result = (* name ## _hook[hook_status_enabled])parameters;	\
 		enable_all_hooks();						\
 	}									\

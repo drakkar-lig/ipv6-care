@@ -408,7 +408,7 @@ in_addr_t overwritten_inet_addr(const char *cp)
 	}
 	else
 	{
-		result = htonl(ipv4_addr.s_addr);
+		result = ipv4_addr.s_addr;
 	}
 	
 	return result;
