@@ -24,6 +24,7 @@ June 29, 2009.
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
 Etienne DUBLE 	-3.0:	Bug connect() -> original_connect()
+Etienne DUBLE 	-3.1:	ipv6_capable_gethostbyname_r
 
 */
 #include <stdio.h>
@@ -329,43 +330,7 @@ int overwritten_gethostbyname_r(const char *name,
 		struct hostent *ret, char *buf, size_t buflen,
 		struct hostent **result, int *h_errnop)
 {
-	int function_result, saved_errno;
-	struct polymorphic_addr pa, *new_pa;
-
-	function_result = original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
-	saved_errno = errno;
-	debug_print(1, "original_gethostbyname_r returned: %d, %d, %d\n", function_result, *h_errnop, errno);
-	if ((function_result != ERANGE)&&(result != NULL)&&(*result == NULL))
-	{
-		if (	(h_errnop != NULL)&& 
-			((*h_errnop == HOST_NOT_FOUND)||(*h_errnop == NO_ADDRESS)||
-			 (*h_errnop == NO_DATA)||(*h_errnop == NO_RECOVERY)))
-		{	// no IPv4 address was found, let's see if there is an IPv6 address
-
-			if (get_address_in_given_family((char *)name, AF_INET6, &pa) == 0)
-			{
-				debug_print(1, "Retrieving address of an IPv6-only host...\n");
-				new_pa = return_converted_pa(&pa, from_ipv6_aware_to_ipv6_agnostic);
-
-				// format it as a hostent
-				function_result = convert_pa_and_name_to_hostent(new_pa, (char *)name, buf, buflen, ret);
-
-				if (function_result == 0)
-				{
-					*result = ret;
-					h_errno = NETDB_SUCCESS;
-					errno = 0;
-				}
-			}
-		}
-	}
-
-	if (function_result != 0)
-	{	// just in case it would have changed
-		errno = saved_errno;
-	}
-//	record_hostent(*result);
-	return function_result;
+	return ipv6_capable_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 }
 
 int overwritten_getnameinfo(const struct sockaddr *sa, socklen_t salen,

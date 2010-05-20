@@ -23,6 +23,7 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
+Etienne DUBLE 	-3.1:	ipv6_capable_gethostbyname_r
 
 */
 #ifndef __ADDRESSES_AND_NAMES_H__
@@ -30,6 +31,8 @@ Etienne DUBLE 	-3.0:	Creation
 
 #include "socket_info.h"
 int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic_sockaddr *new_data);
-int get_address_in_given_family(char *name, int family, struct polymorphic_addr *pa);
+int ipv6_capable_gethostbyname_r(const char *name,
+                struct hostent *ret, char *buf, size_t buflen,
+                struct hostent **result, int *h_errnop);
 
 #endif

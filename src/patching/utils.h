@@ -42,5 +42,4 @@ void copy_psa_to_pa(struct polymorphic_sockaddr *psa, struct polymorphic_addr *p
 void copy_pa_and_port_to_psa(struct polymorphic_addr *pa, unsigned int port, struct polymorphic_sockaddr *psa);
 void copy_ipv4_addr_and_port_to_psa(struct in_addr *ipv4_addr, unsigned int port, struct polymorphic_sockaddr *psa);
 void copy_ipv6_addr_and_port_to_psa(struct in6_addr *ipv6_addr, unsigned int port, struct polymorphic_sockaddr *psa);
-int convert_pa_and_name_to_hostent(struct polymorphic_addr *pa, char *name, char *buf, size_t buflen, struct hostent *ret);
 #endif

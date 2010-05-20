@@ -23,6 +23,7 @@ Nov 25, 2008.
 
 Last modifications: 
 Etienne DUBLE 	-3.0:	Creation
+Etienne DUBLE 	-3.1:	ipv6_capable_gethostbyname_r
 
 */
 #include <sys/socket.h>
@@ -37,6 +38,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include "socket_info.h"
 #include "family.h"
 #include "utils.h"
+#include "ipv6_aware_or_agnostic.h"
 #define MAX_HOST_SIZE	128
 
 extern const struct in6_addr in6addr_any;
@@ -149,34 +151,143 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 	return result;
 }
 
-int get_address_in_given_family(char *name, int family, struct polymorphic_addr *pa)
+#define INITIAL_SIZE_NEEDED(name) 									\
+					((strlen(name) + 1) * sizeof(char) + 	/* name */		\
+					2 * sizeof(char*) +	   		/* alias pointers */ 	\
+					sizeof(struct in_addr *)) 		/* final addr pointer */
+
+#define INCREMENT_SIZE_NEEDED 								\
+					sizeof(struct in_addr) +   /* addr storage */	\
+					sizeof(struct in_addr *)   /* addr pointer */
+
+#define SET_ERRNO(h_errnop, errno) 	if (h_errnop != NULL) *h_errnop = errno;
+
+int ipv6_capable_gethostbyname_r(const char *name,
+                struct hostent *ret, char *buf, size_t buflen,
+                struct hostent **result, int *h_errnop)
 {
-	int result, getaddrinfo_result;
+	int function_result, getaddrinfo_result;
 	struct addrinfo hints, *address_list, *paddress;
 	struct polymorphic_sockaddr psa;
+	struct polymorphic_addr pa, *new_pa;
+	unsigned int size_needed;
+	int family, num_addresses, addr_index;
+	char *p_working_data, **p_working_data_char_pp;
+	struct in_addr *addr_table, **addr_pointer_table, *in_addr_to_be_recorded;
 
 	// getaddrinfo parameters
 	memset(&hints, 0, sizeof(hints));       // init
-	hints.ai_family = family;
+	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM; // could also be SOCK_DGRAM, but needs to be initialized
 
 	getaddrinfo_result = original_getaddrinfo(name, NULL, &hints, &address_list);
 	paddress = address_list;
 	if (getaddrinfo_result == 0)
 	{
-		copy_sockaddr_to_psa(paddress->ai_addr, paddress->ai_addrlen, &psa);
-		copy_psa_to_pa(&psa, pa);
+		num_addresses = 0;
+		size_needed = INITIAL_SIZE_NEEDED(name);
 
+		// loop once to get the total size needed and number of addresses
+		for (paddress = address_list; paddress != NULL; paddress = paddress->ai_next)
+		{
+			num_addresses++;
+			size_needed += INCREMENT_SIZE_NEEDED;
+		}
+
+		if (buflen < size_needed)
+		{
+			function_result = ERANGE;
+		}
+		else
+		{
+			p_working_data = buf;
+			// official name of host
+			strcpy(p_working_data, name);
+			ret->h_name = p_working_data;
+			p_working_data += strlen(p_working_data) +1; // pass length + \0
+			// alias list
+			p_working_data_char_pp = (char **)p_working_data;
+			p_working_data_char_pp[0] = ret->h_name;
+			p_working_data_char_pp[1] = NULL;
+			ret->h_aliases = p_working_data_char_pp;
+			p_working_data = (char *)&p_working_data_char_pp[2];
+			// host address type
+			ret->h_addrtype = AF_INET;
+			// length of address
+			ret->h_length = sizeof(struct in_addr);
+			// list of addresses: loop again over the results of getaddrinfo
+			addr_pointer_table = (struct in_addr **)p_working_data;
+			addr_table = (struct in_addr *)&addr_pointer_table[num_addresses +1];
+			addr_index = 0;
+			for (paddress = address_list; paddress != NULL; paddress = paddress->ai_next)
+			{
+				if (paddress->ai_family == AF_INET6)
+				{
+					copy_sockaddr_to_psa(paddress->ai_addr, paddress->ai_addrlen, &psa);
+					copy_psa_to_pa(&psa, &pa);
+					new_pa = return_converted_pa(&pa, from_ipv6_aware_to_ipv6_agnostic);
+					in_addr_to_be_recorded = &new_pa->addr.ipv4_addr;
+				}
+				else
+				{
+					in_addr_to_be_recorded = &((struct sockaddr_in*)&paddress->ai_addr)->sin_addr;
+				}
+				
+				memcpy(&addr_table[addr_index], in_addr_to_be_recorded, sizeof(struct in_addr)); // record address
+				addr_pointer_table[addr_index] = &addr_table[addr_index]; // record pointer to address
+				addr_index++;
+			}
+			addr_pointer_table[num_addresses] = NULL; 	// end of this table
+			ret->h_addr_list = (char **)addr_pointer_table; // pointer to address list 
+
+			function_result = 0;
+		}
 		// free the list
 		original_freeaddrinfo(address_list);
-
-		result = 0;
 	}
 	else
 	{
-		result = -1;
+		switch (getaddrinfo_result)
+		{
+       			case EAI_ADDRFAMILY:
+			case EAI_NODATA:
+				function_result = ENODATA;
+				SET_ERRNO(h_errnop, NO_ADDRESS);
+				break;
+			case EAI_NONAME:
+				function_result = ENODATA;
+				SET_ERRNO(h_errnop, HOST_NOT_FOUND);
+				break;
+			case EAI_AGAIN:
+				function_result = EAGAIN;
+				SET_ERRNO(h_errnop, TRY_AGAIN);
+				break;
+			case EAI_MEMORY:
+				function_result = ENOMEM;
+				SET_ERRNO(h_errnop, NO_RECOVERY);
+				break;
+			case EAI_SYSTEM:
+				function_result = errno;
+				SET_ERRNO(h_errnop, NO_RECOVERY);
+				break;
+			case EAI_FAIL:
+			default:
+				function_result = ENODATA;
+				SET_ERRNO(h_errnop, NO_RECOVERY);
+				break;
+		}
 	}
 
-	return result;
+	if (function_result == 0)
+	{
+		*result = ret;
+		SET_ERRNO(h_errnop, NETDB_SUCCESS);
+	}
+	else
+	{
+		*result = NULL;
+	}
+
+	return function_result;
 }
 
