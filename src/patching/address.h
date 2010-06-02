@@ -28,6 +28,7 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __ADDRESS_H__
 #define __ADDRESS_H__
 
+#include <sys/socket.h>
 #include <netinet/in.h>
 
 union u_sockaddr

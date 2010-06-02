@@ -25,7 +25,6 @@ Last modifications:
 Etienne DUBLE 	-3.0:	Creation
 
 */
-#include <net/if.h>
 #include <string.h>
 
 #include "common_original_functions.h"
@@ -63,14 +62,18 @@ void REPORT_SND_OR_RCV_BUF(int option, int old_socket, int new_socket)
 
 void report_socket_options(int old_socket, int new_socket)
 {
+#if HAVE_SO_BINDTODEVICE
 	struct ifreq *bound_interface;
+#endif
 
 	REPORT_SOCKET_OPTION(int, SO_BROADCAST, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(int, SO_DEBUG, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(int, SO_DONTROUTE, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(int, SO_KEEPALIVE, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(int, SO_OOBINLINE, old_socket, new_socket);
+#if HAVE_SO_PRIORITY
 	REPORT_SOCKET_OPTION(int, SO_PRIORITY, old_socket, new_socket);
+#endif
 	REPORT_SOCKET_OPTION(int, SO_REUSEADDR, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(struct linger, SO_LINGER, old_socket, new_socket);
 	REPORT_SOCKET_OPTION(struct timeval, SO_RCVTIMEO, old_socket, new_socket);
@@ -78,6 +81,7 @@ void report_socket_options(int old_socket, int new_socket)
 	REPORT_SND_OR_RCV_BUF(SO_RCVBUF, old_socket, new_socket);
 	REPORT_SND_OR_RCV_BUF(SO_SNDBUF, old_socket, new_socket);
 
+#if HAVE_SO_BINDTODEVICE
 	// it seems that getsockopt does not work with SO_BINDTODEVICE
 	// so we use register_bound_interface() in overwritten_functions.c
 	// and get_bound_interface() here (see socket_info.[hc])
@@ -87,5 +91,6 @@ void report_socket_options(int old_socket, int new_socket)
 		original_setsockopt(new_socket, SOL_SOCKET, SO_BINDTODEVICE,
 			(char *)bound_interface, sizeof(struct ifreq));
 	}
+#endif
 }
 

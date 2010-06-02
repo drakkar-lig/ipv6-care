@@ -55,6 +55,7 @@ Etienne DUBLE 	-2.5:	Added gethostbyaddr_r()
 #define USE_GETNAMEINFO_NI_NUMERICHOST			"You should use getnameinfo() with the flag NI_NUMERICHOST, " \
 							"in order to be address-family agnostic."
 
+#define USE_GETNAMEINFO					"You should use getnameinfo() in order to be address-family agnostic."
 
 // gethostbyname
 #define GETHOSTBYNAME_PROBLEM				"gethostbyname"
@@ -92,12 +93,12 @@ Etienne DUBLE 	-2.5:	Added gethostbyaddr_r()
 // gethostbyaddr
 #define GETHOSTBYADDR_PROBLEM				"gethostbyaddr"
 #define GETHOSTBYADDR_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( THIS_PROGRAM_USES_AF_DEPENDENT("gethostbyaddr") )      \
-							SOLUTION( USE_GETADDRINFO_AF_UNSPEC_AI_NUMERICHOST )
+							SOLUTION( USE_GETNAMEINFO )
 
 // gethostbyaddr_r
 #define GETHOSTBYADDR_R_PROBLEM				"gethostbyaddr_r"
 #define GETHOSTBYADDR_R_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( THIS_PROGRAM_USES_AF_DEPENDENT("gethostbyaddr_r") )      \
-							SOLUTION( USE_GETADDRINFO_AF_UNSPEC_AI_NUMERICHOST )
+							SOLUTION( USE_GETNAMEINFO )
 
 // inet_addr
 #define INET_ADDR_PROBLEM				"inet_addr"

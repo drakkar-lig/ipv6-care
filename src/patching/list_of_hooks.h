@@ -76,9 +76,7 @@ HOOK(	gethostbyname_r,
 	PARAMETERS((name, ret, buf, buflen, result, h_errnop)))
 
 HOOK(	getnameinfo,
-	PROTOTYPE(int getnameinfo(const struct sockaddr *sa, socklen_t salen,
-		      char *node, socklen_t nodelen, char *service,
-		      socklen_t servicelen, unsigned int flags)),
+	PROTOTYPE(GETNAMEINFO_PROTOTYPE),
 	PARAMETERS((sa, salen, node, nodelen, service, servicelen, flags)))
 
 HOOK(	getpeername,

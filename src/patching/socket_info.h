@@ -28,7 +28,9 @@ Etienne DUBLE 	-3.0:	Creation
 #ifndef __SOCKET_INFO_H__
 #define __SOCKET_INFO_H__
 
+#if HAVE_SO_BINDTODEVICE
 #include <net/if.h>
+#endif
 
 #include "address.h"
 
@@ -53,8 +55,10 @@ struct polymorphic_sockaddr *get_local_socket_address(int fd);
 void register_local_socket_address(int fd, struct polymorphic_sockaddr *sa);
 struct polymorphic_sockaddr *get_remote_socket_address(int fd);
 void register_remote_socket_address(int fd, struct polymorphic_sockaddr *sa);
+#if HAVE_SO_BINDTODEVICE
 struct ifreq *get_bound_interface(int fd);
 void register_bound_interface(int fd, struct ifreq *interface);
+#endif
 void free_socket_info(int fd);
 
 #endif

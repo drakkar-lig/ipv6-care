@@ -41,6 +41,7 @@ Etienne DUBLE 	-2.5:	added getpeername() getsockname() gethostbyaddr_r()
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <netinet/in.h>
 
 #include "macros.h"
 #include "problems.h"
@@ -272,9 +273,7 @@ PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 	return original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
 }
 
-PUBLIC_FUNCTION int getnameinfo(const struct sockaddr *sa, socklen_t salen,
-              char *node, socklen_t nodelen, char *service,
-              socklen_t servicelen, unsigned int flags)
+PUBLIC_FUNCTION GETNAMEINFO_PROTOTYPE
 {
 	char ip[IP_MAX_SIZE];
 	int port;
@@ -449,6 +448,27 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 	return original_pselect(nfds, readfds, writefds, errorfds, timeout, sigmask);
 }
 
+PUBLIC_FUNCTION ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen)
+{
+	char ip[IP_MAX_SIZE];
+	int port;
+
+	if (test_if_fd_is_a_network_socket(sockfd) == 1)
+	{
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			get_ip_string_and_port(src_addr, ip, IP_MAX_SIZE, &port);
+			__REGISTER_INFO_INT("sockfd", sockfd);
+			__REGISTER_INFO_CHARS("src_addr.ip", ip);
+			__REGISTER_INFO_INT("src_addr.port", port);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
+	}
+
+	return original_recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
+}
+
 PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
@@ -462,6 +482,27 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 	}
 	
 	return original_select(nfds, readfds, writefds, errorfds, timeout);
+}
+
+PUBLIC_FUNCTION ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+	char ip[IP_MAX_SIZE];
+	int port;
+
+	if (test_if_fd_is_a_network_socket(sockfd) == 1)
+	{
+		if (__START_FUNCTION_CALL_ANALYSIS_OK)
+		{
+			get_ip_string_and_port((struct sockaddr *)dest_addr, ip, IP_MAX_SIZE, &port);
+			__REGISTER_INFO_INT("sockfd", sockfd);
+			__REGISTER_INFO_CHARS("dest_addr.ip", ip);
+			__REGISTER_INFO_INT("dest_addr.port", port);
+			__END_FUNCTION_CALL_ANALYSIS
+		}
+	}
+
+	return original_sendto(sockfd, buf, len, flags, dest_addr, addrlen);
 }
 
 PUBLIC_FUNCTION int setsockopt(int socket, int level, int option_name,

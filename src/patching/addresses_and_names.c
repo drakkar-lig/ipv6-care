@@ -162,6 +162,18 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 
 #define SET_ERRNO(h_errnop, errno) 	if (h_errnop != NULL) *h_errnop = errno;
 
+#if HAVE_ENODATA 
+#define ERRNO_ENODATA 	ENODATA
+#else
+#define ERRNO_ENODATA 	ENOMSG
+#endif
+
+#define GAI_ERROR_CASE(error, corresponding_errno, corresponding_herrno)	\
+			error:							\
+				function_result = corresponding_errno;		\
+				SET_ERRNO(h_errnop, corresponding_herrno);	\
+				break;
+
 int ipv6_capable_gethostbyname_r(const char *name,
                 struct hostent *ret, char *buf, size_t buflen,
                 struct hostent **result, int *h_errnop)
@@ -249,32 +261,34 @@ int ipv6_capable_gethostbyname_r(const char *name,
 	{
 		switch (getaddrinfo_result)
 		{
-       			case EAI_ADDRFAMILY:
-			case EAI_NODATA:
-				function_result = ENODATA;
-				SET_ERRNO(h_errnop, NO_ADDRESS);
-				break;
-			case EAI_NONAME:
-				function_result = ENODATA;
-				SET_ERRNO(h_errnop, HOST_NOT_FOUND);
-				break;
-			case EAI_AGAIN:
-				function_result = EAGAIN;
-				SET_ERRNO(h_errnop, TRY_AGAIN);
-				break;
-			case EAI_MEMORY:
-				function_result = ENOMEM;
-				SET_ERRNO(h_errnop, NO_RECOVERY);
-				break;
-			case EAI_SYSTEM:
-				function_result = errno;
-				SET_ERRNO(h_errnop, NO_RECOVERY);
-				break;
-			case EAI_FAIL:
-			default:
-				function_result = ENODATA;
-				SET_ERRNO(h_errnop, NO_RECOVERY);
-				break;
+			// no ip address available
+#if HAVE_EAI_ADDRFAMILY
+			GAI_ERROR_CASE(case EAI_ADDRFAMILY, ERRNO_ENODATA, NO_ADDRESS)
+#endif
+#if HAVE_EAI_NODATA
+			GAI_ERROR_CASE(case EAI_NODATA, ERRNO_ENODATA, NO_ADDRESS)
+#endif
+			// no host found with this name
+#if HAVE_EAI_NONAME
+			GAI_ERROR_CASE(case EAI_NONAME, ERRNO_ENODATA, HOST_NOT_FOUND)
+#endif
+			// try again
+#if HAVE_EAI_AGAIN
+			GAI_ERROR_CASE(case EAI_AGAIN, EAGAIN, TRY_AGAIN)
+#endif
+			// unrecoverable error: no more memory
+#if HAVE_EAI_MEMORY
+			GAI_ERROR_CASE(case EAI_MEMORY, ENOMEM, NO_RECOVERY)
+#endif
+			// unrecoverable error specified by errno
+#if HAVE_EAI_SYSTEM
+			GAI_ERROR_CASE(case EAI_SYSTEM, errno, NO_RECOVERY)
+#endif
+			// other unrecoverable errors
+#if HAVE_EAI_FAIL
+			GAI_ERROR_CASE(case EAI_FAIL, ERRNO_ENODATA, NO_RECOVERY)
+#endif
+			GAI_ERROR_CASE(default, ERRNO_ENODATA, NO_RECOVERY)
 		}
 	}
 

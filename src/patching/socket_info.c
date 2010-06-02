@@ -72,7 +72,9 @@ struct socket_data
 	struct polymorphic_sockaddr local_address;
 	union u_socket_data_per_state data_per_state;
 	int flag_data_registered;
+#if HAVE_SO_BINDTODEVICE
 	struct ifreq bound_interface;
+#endif
 };
 
 struct socket_info_entry {
@@ -229,11 +231,13 @@ void compute_remote_socket_address (int fd, struct socket_data *data)
 	fill_address(fd, &data->data_per_state.communicating.remote_address, original_getpeername);
 }
 
+#if HAVE_SO_BINDTODEVICE
 void compute_bound_interface (int fd __attribute__ ((unused)), struct socket_data *data)
 {	// it seems that SO_BINDTODEVICE does not work with getsockopt
 	// so we have no way to retrieve this
 	memset(&data->bound_interface, 0, sizeof(data->bound_interface));
 }
+#endif
 
 #define indirection_in_get0	
 #define indirection_in_get1	&
@@ -282,6 +286,8 @@ __define_get_and_register_functions(local_socket_address, struct polymorphic_soc
 						data->local_address)
 __define_get_and_register_functions(remote_socket_address, struct polymorphic_sockaddr *, 1, FLAG_DATA_REGISTERED_REMOTE_ADDRESS, 
 						data->data_per_state.communicating.remote_address)
+#if HAVE_SO_BINDTODEVICE
 __define_get_and_register_functions(bound_interface, struct ifreq *, 1, FLAG_DATA_REGISTERED_BOUND_INTERFACE, 
 						data->bound_interface)
+#endif
 

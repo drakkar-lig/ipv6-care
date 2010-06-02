@@ -36,7 +36,6 @@ Etienne DUBLE 	-2.4:	Added get_thread_id
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdarg.h>
-
 #include <string.h>
 extern int __close(int fd);
 
@@ -79,7 +78,7 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 	
         if (p_symbol == NULL)
         {
-		dlerr= dlerror(); 
+		dlerr= (char*)dlerror(); 
 		if (!dlerr)
 		{
 			dlerr= "Unknown reason";
@@ -90,19 +89,38 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
         }
 	return p_symbol;
 }
-/*
-// This function retrieves the name of the current program
-char *get_program_name()
-{
-	// faire popen avec
-	// set -- $(ps -p $$ -o args=); echo $(basename $(expr $1 : "[^[:alpha:]]*\([[:alpha:]].*\)"))
-	// ?
-	return getenv("_");
-}
-*/
+
+#if HAVE_SYS_GETID
 
 int get_thread_id()
 {
+	int thread_id;
+	thread_id = syscall(SYS_gettid);
+	// if this is the main thread, return 0
+	if (thread_id == getpid())
+	{
+		thread_id = 0;
+	}
 	return syscall(SYS_gettid);
 }
 
+#else
+
+int __dummy_thread_id_counter = -1;
+__thread int __dummy_thread_id = -1;
+
+// if no SYS_gettid syscall is provided, 
+// increment an integer as the thread_id.
+// the first walue will be 0, and as an approximation
+// we consider that the initial (main) thread will be
+// the first one to go through this code, and will get this
+// first value (i.e. 0).
+int get_thread_id()
+{
+	if (__dummy_thread_id == -1)
+	{	// for simplication the following is considered atomic
+		__dummy_thread_id == ++__dummy_thread_id_counter;
+	}
+	return __dummy_thread_id;
+}
+#endif

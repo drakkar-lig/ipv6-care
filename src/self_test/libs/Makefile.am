@@ -1,3 +1,4 @@
+include $(top_srcdir)/Makefile.flags
 # building to customdir allows to build libraries as shared libraries
 # even if they are temporary ones... (otherwise libtool builds only static ones)
 customdir = $(PWD)

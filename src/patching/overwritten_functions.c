@@ -591,6 +591,7 @@ int overwritten_setsockopt(int sockfd, int level, int optname,
 		// call the function
 		result = original_setsockopt(sockfd, level, optname, optval, optlen);
 
+#if HAVE_SO_BINDTODEVICE
 		// getsockopt with SO_BINDTODEVICE does not work so we record this here
 		// for later retrieval
 		if ((result == 0) && (level == SOL_SOCKET) && (optname == SO_BINDTODEVICE))
@@ -602,6 +603,7 @@ int overwritten_setsockopt(int sockfd, int level, int optname,
 				register_bound_interface(created_socket, (struct ifreq *)optval);
 			}
 		}
+#endif
 	}
 	else
 	{

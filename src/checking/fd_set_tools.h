@@ -30,6 +30,8 @@ Etienne DUBLE 	-2.3:	Changed test_if_fd_sets_contain_sockets to test_if_fd_sets_
 */
 #ifndef __FD_SET_TOOLS_H__
 #define __FD_SET_TOOLS_H__
+#include <sys/types.h>
+
 int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 #endif

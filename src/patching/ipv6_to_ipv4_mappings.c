@@ -31,6 +31,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
 
 #include "common_original_functions.h"
 #include "ipv6_to_ipv4_mappings.h"

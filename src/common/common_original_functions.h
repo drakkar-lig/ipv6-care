@@ -30,6 +30,7 @@ Etienne DUBLE 	-3.0:	Creation
 #include <poll.h>
 #include <sys/select.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 int original_accept(int socket, struct sockaddr *address,
               socklen_t *address_len);
@@ -69,8 +70,12 @@ int original_ppoll(struct pollfd *fds, nfds_t nfds,
 int original_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	      const struct timespec *timeout, const sigset_t *sigmask);
 ssize_t original_read(int fd, void *buf, size_t count);
+ssize_t original_recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen);
 int original_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
 	      struct timeval *timeout);
+ssize_t original_sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
 int original_setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len);
 int original_socket(int domain, int type, int protocol);

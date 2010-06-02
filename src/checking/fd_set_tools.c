@@ -32,6 +32,7 @@ Etienne DUBLE 	-3.0:	networking_tools.h -> common_networking_tools.h
 */
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include "macros.h"
 #include "common_networking_tools.h"

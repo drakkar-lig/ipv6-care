@@ -28,6 +28,8 @@ Etienne DUBLE 	-3.0:	Creation
 #include <sys/socket.h>
 #include <netdb.h>
 #include <poll.h>
+#include <sys/select.h>
+#include <netinet/in.h>
 
 int overwritten_accept(int socket, struct sockaddr *address,
               socklen_t *address_len);

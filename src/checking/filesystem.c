@@ -213,10 +213,10 @@ char *get_or_create_the_directory_related_to_the_thread()
 		directory_path = get_or_create_the_directory_related_to_the_program();
 		if (directory_path != NULL)
 		{	
-			thread_id = syscall(SYS_gettid);
+			thread_id = get_thread_id();
 
 			// if this is the main thread started at execution of the program, put diagnosis in the main directory
-			if (thread_id == getpid())
+			if (thread_id == 0)
 			{
 				//directory_path_alloc_thread = directory_path;
 				asprintf(&directory_path_alloc_thread, "%s", directory_path); 

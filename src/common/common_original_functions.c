@@ -333,6 +333,18 @@ int original_pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorf
 	return result;
 }
 
+ssize_t original_recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen)
+{
+	int result;
+
+	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(recvfrom),
+					ARGS(sockfd, buf, len, flags, src_addr, addrlen),
+					RETURN_VALUE_IF_FAILURE(-1),
+					RESULT(result));
+	return result;
+}
+
 int original_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds,
       struct timeval *timeout)
 {
@@ -344,6 +356,19 @@ int original_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfd
 					RESULT(result));
 	return result;
 }
+
+ssize_t original_sendto(int sockfd, const void *buf, size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+	int result;
+
+	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(sendto),
+					ARGS(sockfd, buf, len, flags, dest_addr, addrlen),
+					RETURN_VALUE_IF_FAILURE(-1),
+					RESULT(result));
+	return result;
+}
+
 
 int original_setsockopt(int socket, int level, int option_name,
 		const void *option_value, socklen_t option_len)
