@@ -75,6 +75,6 @@ AC_SUBST(IPV4_POOL_END)
 
 AC_CONFIG_FILES([Makefile src/common/Makefile src/checking/Makefile \
 		src/patching/Makefile scripts/ipv6_care:scripts/ipv6_care.in man/Makefile \
-		scripts/Makefile src/self_test/Makefile src/self_test/libs/Makefile src/self_test/binaries/Makefile ])
+		scripts/Makefile self_test/Makefile self_test/src/Makefile self_test/src/libs/Makefile self_test/src/binaries/Makefile ])
 AC_OUTPUT
 

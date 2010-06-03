@@ -1,5 +1,5 @@
 include $(top_srcdir)/Makefile.flags
-SUBDIRS = src/common src/checking src/patching man scripts src/self_test
+SUBDIRS = src/common src/checking src/patching man scripts self_test
 
 EXTRA_DIST = LICENSE README
 
