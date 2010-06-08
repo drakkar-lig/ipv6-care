@@ -69,11 +69,13 @@ void init_lib()
 
 	save_tty_fd();
 
+	program_command_line = NULL;
+
 	// let's get the full command line of the program for future reference
 	c[1] = '\0';
 	fp = fopen("/proc/self/cmdline", "r");
 	if (fp != NULL)
-	{
+	{	// could read /proc/self/cmdline successfully
 		while (!feof(fp))
 		{
 			fread(c, 1, 1, fp);
@@ -86,6 +88,19 @@ void init_lib()
 		fclose(fp);
 		program_command_line[strlen(program_command_line)-2] = '\0'; // it ends with two '\0' converted to spaces
 
+	}
+	else
+	{	// could not read /proc/self/cmdline (some systems have no /proc interface)
+		// let's try to get the full command line by other means
+		if (get_result_of_command(&program_command_line, "ps -p `ps -p $$ -o ppid=` -o args=", 
+					"retrieve the full command line of this program") != 0)
+		{	// could not get the full command line
+			program_command_line = NULL;
+		}
+	}
+
+	if (program_command_line != NULL)
+	{
 		// and the program basename
 		// Normally it is the first word of the process command line
 		// but in the case of a script, the command line would be for example
@@ -118,7 +133,9 @@ void init_lib()
 		free(path_of_program_alloc);
 	}
 	else
-	{
+	{	// we could not get the full command line
+		// we will just retrieve the name of the program
+		// and also copy it as the full command line  
 		asprintf(&path_of_program_alloc, "%s", getenv("_"));
 		asprintf(&program_basename, "%s", basename(path_of_program_alloc));
 		free(path_of_program_alloc);

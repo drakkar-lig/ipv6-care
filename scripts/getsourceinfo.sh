@@ -1,4 +1,4 @@
-#/bin/bash
+#!/usr/bin/env bash
 
 top_dir=$PWD
 

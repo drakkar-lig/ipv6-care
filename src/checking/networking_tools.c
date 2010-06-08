@@ -32,11 +32,14 @@ Etienne DUBLE 	-2.3:	Added test_if_fd_is_a_network_socket
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/in.h>
 
 #include "get_string.h"
 #include "common_original_functions.h"
 
 #define MAX_PORT_LENGTH 16
+
+#define SA_LEN(paddress)        ((paddress)->sa_family == AF_INET)?(sizeof(struct sockaddr_in)):(sizeof(struct sockaddr_in6))
 
 // this function gets a printable string representing an IP address, given a struct sockaddr pointer.
 void get_ip_string_and_port(struct sockaddr *paddress, char *ip, int ip_length, int *port)
@@ -45,7 +48,7 @@ void get_ip_string_and_port(struct sockaddr *paddress, char *ip, int ip_length, 
 	char port_string[MAX_PORT_LENGTH];
 
         // retrieve the ip and port number
-        original_getnameinfo(paddress, sizeof(struct sockaddr_storage), ip, ip_length, port_string, 
+        original_getnameinfo(paddress, SA_LEN(paddress), ip, ip_length, port_string, 
 			MAX_PORT_LENGTH, NI_NUMERICHOST|NI_NUMERICSERV);
 	*port = atoi(port_string);
 

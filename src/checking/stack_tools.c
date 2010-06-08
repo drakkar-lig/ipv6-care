@@ -47,23 +47,52 @@ Etienne DUBLE   -3.0:   Avoid broken pipe errors (2>/dev/null for process before
 extern int interpreted_language;
 extern char *interpreter_name; 
 
+// this function retrieves the details of the backtrace
+void get_bt_data(void **array, int array_size, char ***strings, size_t *size)
+{
+	// get the current back trace of the program
+	*size = backtrace (array, array_size);
+	*strings = backtrace_symbols (array, *size);
+}
+
+// this function analyses a line of the backtrace and returns pointers 
+// specifying where are written the object name and the address
+void get_bt_line_info(char *line, char **name_start, char **name_end, 
+			char **address_start, char **address_end)
+{
+	// check backtrace type
+	if (strstr(line, " at ") != NULL)
+	{	// freebsd
+		*name_start = strrchr(line, ' ') +1;
+		*name_end = line + strlen(line); // end of the line
+		*address_start = line;
+		*address_end = strchr(line, ' ');
+	}
+	else
+	{ 	// linux
+		*name_start = line;
+		*name_end = line + strcspn(line, " (");
+		*address_start = strchr(line, '[') +1;
+		*address_end = strchr(line, ']');
+	}
+}
+
 // This function gets the name of the current executable
 // in the case of an interpreted language, it will be the interpreter 
 void save_interpreter_name()
 {
 	void *array[__MAX_STACK_TRACE];
 	size_t size;
-	char **strings;
+	char **strings, *name_start, *name_end, *address_start, *address_end;
 	int index_first_character_after_name;
 
-	// get the current back trace of the program
-	size = backtrace (array, __MAX_STACK_TRACE);
-	strings = backtrace_symbols (array, size);
+	// get the current backtrace of the program
+	get_bt_data(array, __MAX_STACK_TRACE, &strings, &size);
 
 	// last line will be the first program called
-	index_first_character_after_name = strcspn(strings[size -1], " (");
-	strings[size -1][index_first_character_after_name] = '\0';
-	asprintf(&interpreter_name, "%s", basename(strings[size -1]));
+	get_bt_line_info(strings[size -1], &name_start, &name_end, &address_start, &address_end);
+	*name_end = '\0';
+	asprintf(&interpreter_name, "%s", basename(name_start));
 
 	free (strings);
 }
@@ -73,14 +102,13 @@ void write_stack_file(char *directory)
 {
 	void *array[__MAX_STACK_TRACE];
 	size_t size;
-	char **strings;
+	char **strings, *name_start, *name_end, *address_start, *address_end;
 	size_t i;
 	char *command = NULL, *last_file = NULL, *index_hexa, *index_end_hexa;
 	int index_first_character_after_name;
 
 	// get the current backtrace of the program
-	size = backtrace (array, __MAX_STACK_TRACE);
-	strings = backtrace_symbols (array, size);
+	get_bt_data(array, __MAX_STACK_TRACE, &strings, &size);
 
 	// start creating a shell command
 	asprintf(&command, "LD_PRELOAD=\"\"; { ");
@@ -88,29 +116,21 @@ void write_stack_file(char *directory)
 	// loop for each function of the stack
 	for (i = 0; i < size; i++)
 	{
-		if (strstr(strings[i], "libipv6_checker") != NULL)
-		{
-			continue;
-		}
+		//printf("%d: %s\n", (int)i, strings[i]);
 
 		// we do not take into account the functions within this 
 		// ipv6 code checker library.
-		// moreover we expect that the line is
-		// <object_file_which_contains_function> [<hexa_location>] 
-		index_first_character_after_name = strcspn(strings[i], " (");
-
-		if (	(strstr(strings[i], "libipv6_care") != NULL) ||
-			(index_first_character_after_name == (int)strlen(strings[i])) ||
-			(strings[i][0] == '[') ||
-			(strchr(strings[i], '[') == NULL))
-		{	// in these cases we ignore this line
+		if (strstr(strings[i], "libipv6_care") != NULL)
+		{	// line ignored
 			continue;
 		}
 
-		// we separate the word corresponding to the object file
-		strings[i][index_first_character_after_name] = '\0';
+		// we end the words
+		get_bt_line_info(strings[i], &name_start, &name_end, &address_start, &address_end);
+		*name_end = '\0';
+		*address_end = '\0';
 
-		// after this object file we have the position in this object file
+		// with the object file we have the position in this object file
 		// as an hexadecimal number.
 		// we want to use the addr2line command to know the name of the function
 		// this point in the file corresponds to. 
@@ -119,7 +139,7 @@ void write_stack_file(char *directory)
 		// since using addr2line can be expensive for execution time, 
 		// we try to use it only one time for each different object file, by
 		// appending all hexadecimal numbers we want to the same addr2line command.
-		if ((last_file == NULL) || (strcmp(last_file, strings[i]) != 0))
+		if ((last_file == NULL) || (strcmp(last_file, name_start) != 0))
 		{
 			if (last_file != NULL)
 			{
@@ -134,16 +154,12 @@ void write_stack_file(char *directory)
 								"set -- $(whereis -b \"$location\") ; "
 								"location=\"$2\"; "
 							"fi ; "
-							"addr2line -f -C -e \"$location\"", strings[i]);
-			last_file = strings[i];
+							"addr2line -f -C -e \"$location\"", name_start);
+			last_file = name_start;
 		}
 		
 		// append the hexadecimal number to this current addr2line command.
-		index_hexa = strchr(&strings[i][index_first_character_after_name]+1, '[') +1;
-		index_end_hexa = strchr(index_hexa, ']');
-		*index_end_hexa = '\0';
-		
-		append_to_string(&command, " %s", index_hexa);
+		append_to_string(&command, " %s", address_start);
 	}
 
 	// the end of the shell command. It:

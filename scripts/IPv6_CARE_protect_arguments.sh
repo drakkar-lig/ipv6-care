@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) Members of the EGEE Collaboration. 2008. 
 # See http://www.eu-egee.org/partners/ for details on the copyright

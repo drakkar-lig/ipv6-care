@@ -59,11 +59,12 @@ void set_ld_preload()
 
 void write_failure_diagnosis(char *description, char *reason)
 {
-	PRINTF(	RED 	"** IPv6 CARE failed to %s because %s.\n"
-		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this." 
-		ENDCOLOR
-			"\n", 
+	colored_print_if_tty(RED, 
+			"** IPv6 CARE failed to %s because %s.\n"
+		  	"** This usually means that a mechanism like AppArmor or SELinux is preventing this program to do this.",
 		description, reason);
+	PRINTF("\n"); 
+	fflush(tty_fd);
 }
 
 int get_result_of_command(char **storage_string, char *command, char *description)

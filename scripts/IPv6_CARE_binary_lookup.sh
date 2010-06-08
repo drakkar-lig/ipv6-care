@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) Members of the EGEE Collaboration. 2008. 
 # See http://www.eu-egee.org/partners/ for details on the copyright
@@ -34,9 +34,15 @@ then
 fi
 
 echo -n "Testing... "
-ldd_result=$(LD_PRELOAD=$library_path ldd $file 2>/dev/null)
+# freebsd needs ldd option '-a' in order to have the LD_PRELOADed library displayed.
+# linux does not know this option.
+# So we try both and ignore errors.
+ldd_result=$(
+	LD_PRELOAD=$library_path ldd $file 2>/dev/null
+	LD_PRELOAD=$library_path ldd -a $file 2>/dev/null
+)
 echo "done."
-if [ $(echo "$ldd_result" | grep '(' | wc -l) -eq 0 ]
+if [ $(echo "$ldd_result" | grep '=>' | wc -l) -eq 0 ]
 then
 	file $file
 	echo "$file is not a dynamically linked binary executable, IPv6 CARE will not be loaded." 

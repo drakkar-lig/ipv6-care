@@ -40,6 +40,7 @@ Etienne DUBLE 	-3.1:	ipv6_capable_gethostbyname_r
 #include "utils.h"
 #include "ipv6_aware_or_agnostic.h"
 #define MAX_HOST_SIZE	128
+#define SA_LEN(paddress)        ((paddress)->sa_family == AF_INET)?(sizeof(struct sockaddr_in)):(sizeof(struct sockaddr_in6))
 
 extern const struct in6_addr in6addr_any;
 extern const struct in6_addr in6addr_loopback;
@@ -117,7 +118,7 @@ int get_equivalent_address(struct polymorphic_sockaddr *data, struct polymorphic
 	if (get_equivalent_constant_address(data, new_data) != 0)
 	{
 		// get the hostname
-		result = original_getnameinfo(&data->sockaddr.sa, data->sa_len, host, MAX_HOST_SIZE, NULL, 0, NI_NUMERICSERV);
+		result = original_getnameinfo(&data->sockaddr.sa, SA_LEN(&data->sockaddr.sa), host, MAX_HOST_SIZE, NULL, 0, NI_NUMERICSERV);
 		if (result == 0)
 		{
 			// get its IP of the other family

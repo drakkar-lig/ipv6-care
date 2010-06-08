@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) Members of the EGEE Collaboration. 2008. 
 # See http://www.eu-egee.org/partners/ for details on the copyright
@@ -56,9 +56,17 @@ fi
 
 this_program=$(basename $0)
 
-GREEN="\033[32;1m"
-RED="\033[31;1m"
-ENDCOLOR="\033[0m"
+# only colorize if output is a terminal
+if [ -t 1 ]
+then
+	GREEN="\033[32;1m"
+	RED="\033[31;1m"
+	ENDCOLOR="\033[0m"
+else
+	GREEN=""
+	RED=""
+	ENDCOLOR=""
+fi
 
 checking_library="$libdir/libipv6_care_checking.so"
 patching_library="$libdir/libipv6_care_patching.so"
@@ -114,30 +122,38 @@ ipv6_care_get_diagnosis_directories()
 
 ipv6_care_show_directories()
 {
-	GREEN="\033[32;1m"
-	ENDCOLOR="\033[0m"
+	# only colorize if output is a terminal
+	if [ -t 1 ]
+	then
+		GREEN="\033[32;1m"
+	else
+		ENDCOLOR=""
+	fi
 
 	new_number_of_directories=$(ipv6_care_get_diagnosis_directories | wc -l)
 	number_of_new_directories=$(($new_number_of_directories - $ipv6_care_prev_number_of_directories))
 
 	# check if diagnosis directories were created
-	for directory in $(ipv6_care_get_diagnosis_directories | head -n $number_of_new_directories)
-	do
-		# sometimes we are going too fast and try to read the command line before it is written
-		# this loop will avoid this
-		while true
+	if [ $number_of_new_directories -gt 0 ]
+	then
+		for directory in $(ipv6_care_get_diagnosis_directories | head -n $number_of_new_directories)
 		do
-			full_command_line=$(cat $directory/full_command_line 2>/dev/null)
-			if [ "$full_command_line" != "" ]
-			then
-				break
-			fi
-			sleep 0.1
+			# sometimes we are going too fast and try to read the command line before it is written
+			# this loop will avoid this
+			while true
+			do
+				full_command_line=$(cat $directory/full_command_line 2>/dev/null)
+				if [ "$full_command_line" != "" ]
+				then
+					break
+				fi
+				sleep 0.1
+			done
+			echo -en "$GREEN"
+			echo -n  "IPv6 diagnosis for '$full_command_line' was generated in: $directory"
+			echo -e  "$ENDCOLOR"
 		done
-		echo -en "$GREEN"
-		echo -n  "IPv6 diagnosis for '$full_command_line' was generated in: $directory"
-		echo -e  "$ENDCOLOR"
-	done
+	fi
 
 	export ipv6_care_prev_number_of_directories=$new_number_of_directories 	# for next call
 
@@ -243,7 +259,7 @@ case "$1" in
 
 		get_process_list()
 		{
-			ps T -o pid=,comm= 
+			ps T -o pid= -o comm=
 		}
 
 		get_process_list > /tmp/.plist_$$_init

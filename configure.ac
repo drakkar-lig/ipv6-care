@@ -20,7 +20,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for libraries.
+LDFLAGS="$LDFLAGS -L/usr/local/lib/"
 AC_CHECK_LIB([dl], [dlopen])
+AC_CHECK_LIB([execinfo], [backtrace_symbols])
 
 dnl Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h execinfo.h])

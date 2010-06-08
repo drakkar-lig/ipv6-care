@@ -52,8 +52,7 @@ extern __thread char *log_file_content;
 extern __thread char *log_function_line;
 extern __thread int index_last_line;
 
-#define ONLINE_LOG_PREFIX GREEN "IPV6 CARE detected:" BLUE
-#define ONLINE_LOG_SUFFIX ENDCOLOR
+#define ONLINE_LOG_PREFIX "IPV6 CARE detected:"
 
 void log_if_needed()
 {
@@ -119,7 +118,10 @@ void register_info_end()
 	// in the standard output of the program
 	if (verbose_level > 0)
 	{
-		PRINTF(ONLINE_LOG_PREFIX " %s" ONLINE_LOG_SUFFIX "\n", log_function_line);
+		colored_print_if_tty(GREEN, "%s", ONLINE_LOG_PREFIX);
+		colored_print_if_tty(BLUE, " %s", log_function_line);
+		PRINTF("\n"); 
+		fflush(tty_fd);
 	}
 
 	if ((index_last_line != -1) && (memcmp(log_file_content + index_last_line, log_function_line, current_line_size) == 0))

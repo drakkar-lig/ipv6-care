@@ -106,7 +106,9 @@ int recursive_mkdir(char *dir)
 
 		if ((result != 0)&&(errno != ENOENT))
 		{
-			PRINTF( RED "** IPv6 CARE failed to create %s (%s)." ENDCOLOR "\n", dir, strerror(errno));
+			colored_print_if_tty(RED, "** IPv6 CARE failed to create %s (%s).", dir, strerror(errno));
+			PRINTF("\n"); 
+			fflush(tty_fd);
 		}
 
 		// if first try failed with error "no such file or directory"
@@ -251,7 +253,9 @@ FILE *open_log_file()
 		free(full_filename_alloc);
 		if (file == NULL)
 		{
-			PRINTF( RED "** IPv6 CARE failed to create or open %s (%s)." ENDCOLOR "\n", full_filename_alloc, strerror(errno));
+			colored_print_if_tty(RED, "** IPv6 CARE failed to create or open %s (%s).", full_filename_alloc, strerror(errno));
+			PRINTF("\n"); 
+			fflush(tty_fd);
 		}
 	}
 

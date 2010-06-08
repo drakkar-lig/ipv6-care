@@ -37,7 +37,11 @@ Etienne DUBLE 	-2.4:	Added get_thread_id
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-extern int __close(int fd);
+
+int _ipv6_care_close(int fd)
+{
+	return syscall(SYS_close, fd);
+}
 
 // This function tries to locate the original networking function of the libc
 void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
@@ -53,8 +57,8 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 	// calls close(). If we call dlsym() we will have a loop (or mutex hanging)
 	// because dlsym() calls malloc().
 	if (strcmp(symbol, "close") == 0)
-	{	// redirects directly the alias of the libc
-		return __close;
+	{	// syscall directly
+		return _ipv6_care_close;
 	}
 
 	// try the given symbol versions provided first, if any
@@ -90,7 +94,7 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 	return p_symbol;
 }
 
-#if HAVE_SYS_GETID
+#if HAVE_SYS_GETTID
 
 int get_thread_id()
 {
@@ -101,7 +105,7 @@ int get_thread_id()
 	{
 		thread_id = 0;
 	}
-	return syscall(SYS_gettid);
+	return thread_id;
 }
 
 #else
@@ -119,8 +123,9 @@ int get_thread_id()
 {
 	if (__dummy_thread_id == -1)
 	{	// for simplication the following is considered atomic
-		__dummy_thread_id == ++__dummy_thread_id_counter;
+		__dummy_thread_id = ++__dummy_thread_id_counter;
 	}
 	return __dummy_thread_id;
 }
+
 #endif

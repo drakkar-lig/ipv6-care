@@ -20,20 +20,33 @@ Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 Oct 7, 2009.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-2.4:	Creation
-
 */
 
-#ifndef __COMMON_COLORS_H__
-#define __COMMON_COLORS_H__
+#include <stdio.h>
+#include <stdarg.h>
+#include <unistd.h>
 
-#define RED 	31
-#define GREEN 	32
-#define BLUE 	34 
+#include "common_fd_tools.h"
 
-void colored_print_if_tty(int color, char *format_string, ...);
+void colored_print_if_tty(int color, char *format_string, ...)
+{
+	va_list ap;
 
-#endif
+	va_start(ap, format_string);
+
+	if (isatty(fileno(tty_fd)))
+	{
+		fprintf(tty_fd, "\033[%d;1m", color);
+	}
+
+	vfprintf(tty_fd, format_string, ap);
+
+	if (isatty(fileno(tty_fd)))
+	{
+		fprintf(tty_fd, "\033[0m");
+	}
+
+	va_end(ap);
+}
+
 
