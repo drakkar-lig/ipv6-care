@@ -57,6 +57,14 @@ Etienne DUBLE 	-2.5:	Added gethostbyaddr_r()
 
 #define USE_GETNAMEINFO					"You should use getnameinfo() in order to be address-family agnostic."
 
+// accept on an IPv4 socket with no previous select / poll
+#define ACCEPT_ONLY_IPV4_PROBLEM			"accept_only_IPv4"
+#define ACCEPT_ONLY_IPV4_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( "This program seems to accept only IPv4 clients." )	\
+							SOLUTION( "Modify the source code in order to accept both IPv4 and IPv6 clients.\n" \
+								"The first way to achieve this is to open two sockets, " \
+								"one IPv4 socket and one IPv6 socket with its option IPV6_V6ONLY set to 1; " \
+								"then you should wait for a connection event on any of them using 'select()'.\n" \
+								"The other way is to open just one IPv6 socket, and set its IPV6_V6ONLY option to 0." )
 // gethostbyname
 #define GETHOSTBYNAME_PROBLEM				"gethostbyname"
 #define GETHOSTBYNAME_PROBLEM_DESCRIPTION		PROBLEM_DETECTED( THIS_PROGRAM_USES_IPV4_ONLY("gethostbyname") )	\

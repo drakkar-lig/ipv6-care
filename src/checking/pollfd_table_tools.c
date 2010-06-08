@@ -32,10 +32,31 @@ Etienne DUBLE 	-2.5:	Creation
 #include "macros.h"
 #include "common_networking_tools.h"
 
-void register_info_chars(char *name, char *value);
+extern __thread fd_set last_read_fds_storage;
+extern __thread fd_set *last_read_fds;
 
 // These functions are useful for the management of [p]poll() arguments
 // ----------------------------------------------------------
+void register_last_read_pollfd_table(struct pollfd *fds, nfds_t nfds)
+{
+	unsigned int n;
+
+	if (last_read_fds == NULL)
+	{
+		last_read_fds = &last_read_fds_storage;
+	}
+	
+	FD_ZERO(last_read_fds);
+
+	for (n=0; n<nfds; n++)
+	{
+		if (fds[n].events & POLLIN > 0)
+		{
+			FD_SET(fds[n].fd, last_read_fds);
+		}
+	}
+}
+
 int test_if_pollfd_table_contain_network_sockets(struct pollfd *fds, nfds_t nfds)
 {
 	unsigned int n;

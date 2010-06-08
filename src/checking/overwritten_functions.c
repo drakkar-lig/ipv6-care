@@ -70,6 +70,12 @@ PUBLIC_FUNCTION int accept(int socket, struct sockaddr *address,
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
 			__REGISTER_INFO_INT("socket", socket);
+
+			if (test_if_accepting_only_IPv4(socket) == 1)
+			{
+				write_problem(ERROR, ACCEPT_ONLY_IPV4_PROBLEM, ACCEPT_ONLY_IPV4_PROBLEM_DESCRIPTION);
+			}
+	
 			__END_FUNCTION_CALL_ANALYSIS
 		}
 	}
@@ -408,6 +414,8 @@ PUBLIC_FUNCTION int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
+		register_last_read_pollfd_table(fds, nfds);
+	
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
 			register_pollfd_table_parameters(fds, nfds);
@@ -423,6 +431,8 @@ PUBLIC_FUNCTION int ppoll(struct pollfd *fds, nfds_t nfds,
 {
 	if (test_if_pollfd_table_contain_network_sockets(fds, nfds))
 	{
+		register_last_read_pollfd_table(fds, nfds);
+
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
 			register_pollfd_table_parameters(fds, nfds);
@@ -438,6 +448,8 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
+		register_last_read_fds(readfds);
+
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
 			register_fd_sets_parameters(nfds, readfds, writefds, errorfds);
@@ -474,6 +486,8 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
+		register_last_read_fds(readfds);
+
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
 			register_fd_sets_parameters(nfds, readfds, writefds, errorfds);

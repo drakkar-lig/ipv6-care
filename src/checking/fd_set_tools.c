@@ -33,15 +33,51 @@ Etienne DUBLE 	-3.0:	networking_tools.h -> common_networking_tools.h
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "macros.h"
 #include "common_networking_tools.h"
 
-void register_info_chars(char *name, char *value);
+extern __thread fd_set last_read_fds_storage;
+extern __thread fd_set *last_read_fds;
 
 // These functions are useful for the management of fd-sets 
 // in 'select' and 'pselect'
 // ----------------------------------------------------------
+void register_last_read_fds(fd_set *readfds)
+{
+	if (last_read_fds == NULL)
+	{
+		last_read_fds = &last_read_fds_storage;
+	}
+	
+	memcpy(last_read_fds, readfds, sizeof(*last_read_fds));
+}
+
+
+int test_if_accepting_only_IPv4(int socket)
+{
+	struct sockaddr_storage sas;
+	unsigned int size = sizeof(sas);
+	struct sockaddr *sa = (struct sockaddr *)&sas;
+
+	// we will check that we are not accepting only IPv4 clients, i.e.:
+	// 1) the socket is IPv4
+	// 2) no select / poll involving this socket was previously done
+
+	original_getsockname(socket, sa, &size);
+	if (sa->sa_family == AF_INET)
+	{	
+		if (last_read_fds == NULL)
+			return 1;
+	
+		if (!FD_ISSET(socket, last_read_fds))
+			return 1;
+	}
+
+	return 0;
+}
+
 int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
 {
 	int n;

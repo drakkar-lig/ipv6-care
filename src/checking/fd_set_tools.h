@@ -32,6 +32,8 @@ Etienne DUBLE 	-2.3:	Changed test_if_fd_sets_contain_sockets to test_if_fd_sets_
 #define __FD_SET_TOOLS_H__
 #include <sys/types.h>
 
+void register_last_read_fds(fd_set *readfds);
+int test_if_accepting_only_IPv4(int socket);
 int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 #endif

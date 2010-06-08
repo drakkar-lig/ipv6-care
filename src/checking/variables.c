@@ -30,6 +30,7 @@ Etienne DUBLE 	-2.5:	Removed variable log_all, log_needed
 
 */
 #include <stdio.h>
+#include <sys/select.h>
 
 // global variables
 int max_function_depth_reported = 0;
@@ -45,5 +46,7 @@ __thread char *log_file_content = NULL;
 __thread char *log_function_line = NULL;
 __thread int index_last_line = -1;
 __thread int log_file_allocated_size = 0;
+__thread fd_set last_read_fds_storage;
+__thread fd_set *last_read_fds = NULL;
 
 
