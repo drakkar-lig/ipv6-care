@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,15 +20,7 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-1.0:	Creation
-Etienne DUBLE 	-2.1:	get_ip_string -> get_ip_string_and_port
-Etienne DUBLE 	-2.3:	Added test_if_fd_is_a_network_socket
-Etienne DUBLE 	-2.4:	Removed test_if_fd_is_a_network_socket
-
 */
 #ifndef __NETWORKING_TOOLS_H__
 #define __NETWORKING_TOOLS_H__

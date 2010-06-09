@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,15 +20,10 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-1.0:	Creation
-
 */
-#include "get_string.h"
 
+#include "get_string.h"
 // the get_string function is a generic function used to translate an integer constant value in a printable 
 // string. 
 // this is used to properly print the address families and the socket types.

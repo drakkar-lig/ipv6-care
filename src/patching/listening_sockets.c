@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,16 +20,10 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-3.0:	Creation
-Etienne DUBLE 	-3.0:	Added test_if_fd_is_a_network_socket(initial_socket)
-
 */
-#include <unistd.h>
 
+#include <unistd.h>
 #include "common_original_functions.h"
 #include "common_networking_tools.h"
 #include "created_sockets.h"

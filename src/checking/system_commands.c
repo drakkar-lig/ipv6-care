@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,18 +20,10 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-2.2:	Creation
-Etienne DUBLE 	-2.4:	Provide diagnostic if system or popen command fails
-Etienne DUBLE 	-2.5:	Management of messages to stdout when running daemons
-Etienne DUBLE 	-2.5:	ENDCOLOR before \n
-
 */
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "append_to_string.h"
 #include "common_colors.h"

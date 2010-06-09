@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,15 +20,14 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-June 29, 2009.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-3.0:	Creation
-
 */
-#include <sys/socket.h>
+
+#ifndef __OVERWRITTEN_FUNCTIONS_H__
+#define __OVERWRITTEN_FUNCTIONS_H__
+
 #include <netdb.h>
+#include <sys/socket.h>
 #include <poll.h>
 #include <sys/select.h>
 #include <netinet/in.h>
@@ -72,3 +73,5 @@ int overwritten_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *erro
 int overwritten_setsockopt(int sockfd, int level, int optname,
                       const void *optval, socklen_t optlen);
 int overwritten_socket(int domain, int type, int protocol);
+
+#endif

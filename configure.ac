@@ -1,3 +1,21 @@
+# Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+# France). 2010. 
+# Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+# http://www.eu-egee.org/partners/ for details on the copyright
+# holders.  
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); 
+# you may not use this file except in compliance with the License. 
+# You may obtain a copy of the License at 
+#
+#    http://www.apache.org/licenses/LICENSE-2.0 
+#
+# Unless required by applicable law or agreed to in writing, software 
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+# See the License for the specific language governing permissions and 
+# limitations under the License.
+
 AC_INIT([ipv6_care],[3.1],[ipv6-care-support@urec.cnrs.fr])
 AC_CONFIG_SRCDIR([src/checking/log.c])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -25,18 +43,19 @@ AC_CHECK_LIB([dl], [dlopen])
 AC_CHECK_LIB([execinfo], [backtrace_symbols])
 
 dnl Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/socket.h sys/time.h unistd.h execinfo.h])
+CPPFLAGS="$CPPFLAGS -I/usr/local/include/"
+AC_CHECK_HEADERS([execinfo.h], [], [AC_MSG_ERROR([This package needs execinfo functionality which is missing.])])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_TYPE_MODE_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
+#AC_HEADER_STDBOOL
+#AC_TYPE_MODE_T
+#AC_TYPE_SIZE_T
+#AC_TYPE_SSIZE_T
 
 dnl Checks for library functions.
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
-AC_CHECK_FUNCS([ppoll dup2 gethostbyaddr gethostbyname inet_ntoa localtime_r memset mkdir select setenv socket strchr strcspn strerror strstr])
+#AC_FUNC_MALLOC
+#AC_FUNC_REALLOC
+#AC_CHECK_FUNCS([ppoll strstr])
 
 dnl Check for particular features
 AX_CHECK_SYS_GETTID

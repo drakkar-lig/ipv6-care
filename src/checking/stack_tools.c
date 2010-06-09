@@ -1,6 +1,8 @@
 /*
-Copyright (c) Members of the EGEE Collaboration. 2008. 
-See http://www.eu-egee.org/partners/ for details on the copyright
+Copyright (c) Centre National de la Recherche Scientifique (CNRS,
+France). 2010. 
+Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
+http://www.eu-egee.org/partners/ for details on the copyright
 holders.  
 
 Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -18,22 +20,10 @@ limitations under the License.
 ---------------------------------------------------------------------
 Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
-Nov 25, 2008.
 ---------------------------------------------------------------------
-
-Last modifications: 
-Etienne DUBLE 	-1.0:	Creation
-Etienne DUBLE 	-2.0:	Correct a bug if stack returned is not as expected
-Etienne DUBLE   -2.0:	Improved stack trace if function not found
-Etienne DUBLE 	-2.0:	Added warning about interpreted languages
-Etienne DUBLE 	-2.2:	system() -> run_command() => Disable LD_PRELOAD in the subprocesses
-Etienne DUBLE 	-2.2:	get_interpreter_name() -> save_interpreter_name()
-Etienne DUBLE 	-2.4:	Provide diagnostic if system command fails
-Etienne DUBLE   -3.0:   Avoid broken pipe errors (2>/dev/null for process before '|')
-
 */
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <execinfo.h>
 #include <string.h>
 
