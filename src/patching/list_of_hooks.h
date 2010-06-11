@@ -22,8 +22,14 @@ Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
 etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 ---------------------------------------------------------------------
 */
+
+/* 
+This file may be included several time in order to define
+various things, depending on the definition of the HOOK macro.
+Consequently DON'T SET #ifndef #define #endif HERE!
 #ifndef __LIST_OF_HOOKS_H__
 #define __LIST_OF_HOOKS_H__
+*/
 
 #define PROTOTYPE(p) p
 #define PARAMETERS(p) p
@@ -138,5 +144,4 @@ HOOK(	socket,
 	PROTOTYPE(int socket(int domain, int type, int protocol)),
 	PARAMETERS((domain, type, protocol)))
 
-#endif
 
