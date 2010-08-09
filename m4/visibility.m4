@@ -6,6 +6,9 @@ dnl with or without modifications, as long as this notice is preserved.
 
 dnl From Bruno Haible.
 
+dnl Modified by Etienne Duble: added -Werror because the lack of visibility
+dnl support is sometimes reported as a warning.
+
 dnl Tests whether the compiler supports the command-line option
 dnl -fvisibility=hidden and the function and variable attributes
 dnl __attribute__((__visibility__("hidden"))) and
@@ -29,7 +32,7 @@ AC_DEFUN([gl_VISIBILITY],
     AC_MSG_CHECKING([for simple visibility declarations])
     AC_CACHE_VAL(gl_cv_cc_visibility, [
       gl_save_CFLAGS="$CFLAGS"
-      CFLAGS="$CFLAGS -fvisibility=hidden"
+      CFLAGS="$CFLAGS -fvisibility=hidden -Werror"
       AC_TRY_COMPILE(
         [extern __attribute__((__visibility__("hidden"))) int hiddenvar;
          extern __attribute__((__visibility__("default"))) int exportedvar;

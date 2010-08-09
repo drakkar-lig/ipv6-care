@@ -24,6 +24,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 */
 
 #include <unistd.h>
+#include <string.h>
 #include "common_original_functions.h"
 #include "common_networking_tools.h"
 #include "created_sockets.h"

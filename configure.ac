@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and 
 # limitations under the License.
 
-AC_INIT([ipv6_care],[3.1],[ipv6-care-support@urec.cnrs.fr])
+AC_INIT([ipv6_care],[3.2],[ipv6-care-support@urec.cnrs.fr])
 AC_CONFIG_SRCDIR([src/checking/log.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
@@ -55,13 +55,15 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 dnl Checks for library functions.
 #AC_FUNC_MALLOC
 #AC_FUNC_REALLOC
-#AC_CHECK_FUNCS([ppoll strstr])
+AC_CHECK_FUNCS([dlvsym])
 
 dnl Check for particular features
 AX_CHECK_SYS_GETTID
 AX_CHECK_GETNAMEINFO_PROTOTYPE
+AX_CHECK_GHBX_R_PROTOTYPE
 AX_CHECK_GETADDRINFO_CONSTANTS
 AX_CHECK_SOCKET_OPTIONS
+AX_CHECK_SOCKLEN_TYPE
 
 dnl Install bash-completion file?
 dnl see http://www.google.com/codesearch/p?hl=fr#7JifyE86fvY/configure.ac&q=file:gvfs-bash-completion.sh&d=0

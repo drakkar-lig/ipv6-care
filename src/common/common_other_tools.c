@@ -55,6 +55,7 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 		return _ipv6_care_close;
 	}
 
+#if HAVE_DLVSYM
 	// try the given symbol versions provided first, if any
 	va_start(ap, symbol);
 	for(i=1; i<num_args; i++)
@@ -67,6 +68,7 @@ void *get_symbol(int num_args, char *symbol, ... /* optional symbol versions */)
 		}
 	}
 	va_end(ap);
+#endif
 	
 	// try dlsym with no version specified
 	if (p_symbol == NULL)

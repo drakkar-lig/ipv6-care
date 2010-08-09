@@ -26,6 +26,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 #include <stdio.h>
 #include <sys/types.h>
 #include <poll.h>
+#include <string.h>
 
 #include "macros.h"
 #include "common_networking_tools.h"

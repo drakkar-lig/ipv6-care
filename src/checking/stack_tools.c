@@ -26,6 +26,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 #include <stdio.h>
 #include <execinfo.h>
 #include <string.h>
+#include <libgen.h>
 
 #include "append_to_string.h"
 #include "interpreted_language.h"

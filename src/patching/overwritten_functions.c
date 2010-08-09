@@ -45,6 +45,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 #include "getxxxxname.h"
 #include "ipv6_aware_or_agnostic.h"
 #include "manage_hooks.h"
+#include "overwritten_functions.h"
 
 extern int h_errno;
 
@@ -221,14 +222,24 @@ int overwritten_getaddrinfo(const char *nodename,
 */	return result;
 }
 
+#if GETHOSTBYXXXX_HOSTENT_RESULT_IS_RETURNED
+#define TEST_RETURN_VALUE(value) 	(value != NULL)
+#define ERROR_VALUE(func_result,errno) 	errno
+#define RETURN_VALUE(gethostbyaddr_r_result, function_result) gethostbyaddr_r_result
+#else
+#define TEST_RETURN_VALUE(value)	(value == 0)
+#define ERROR_VALUE(func_result,errno)	func_result
+#define RETURN_VALUE(gethostbyaddr_r_result, function_result) function_result
+#endif
+
 struct hostent *overwritten_gethostbyaddr(const void *addr, socklen_t len, int type)
 {
-	static __thread struct hostent result;
+	static __thread struct hostent ret_storage;
 	static __thread int buflen = 0;
 	static __thread char *buf = NULL;
-	int done = 0;
-	struct hostent *function_result;
-	int gethostbyaddr_r_result;
+	int done = 0, *h_errnop = &h_errno;
+	struct hostent *function_result, *ret = &ret_storage, **result = &function_result;
+	GETHOSTBYXXXX_R_RETURN_TYPE gethostbyaddr_r_result;
 
 	debug_print(1, "in gethostbyaddr\n");
 	while(done == 0)
@@ -237,14 +248,15 @@ struct hostent *overwritten_gethostbyaddr(const void *addr, socklen_t len, int t
 		buflen *= 2;
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyaddr_r function below
-		gethostbyaddr_r_result = overwritten_gethostbyaddr_r(addr, len, type, &result, buf, buflen, &function_result, &h_errno);
-		if (gethostbyaddr_r_result == 0)
+		// GETHOSTBYADDR_R_ARGS = addr, len, type, ret, buf, buflen, [result,] h_errnop
+		gethostbyaddr_r_result = overwritten_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS );
+		if TEST_RETURN_VALUE(gethostbyaddr_r_result)
 		{
 			done = 1;
 		}
 		else
 		{
-			if (gethostbyaddr_r_result != ERANGE)
+			if (ERROR_VALUE(gethostbyaddr_r_result, h_errno) != ERANGE)
 			{
 				function_result = NULL;
 				done = 1;
@@ -252,28 +264,25 @@ struct hostent *overwritten_gethostbyaddr(const void *addr, socklen_t len, int t
 		}
 	}
 
-//	record_hostent(result);
-	return function_result;
+	return RETURN_VALUE(gethostbyaddr_r_result, function_result);
 }
 
-int overwritten_gethostbyaddr_r(	const void *addr, socklen_t len, int type,
-			struct hostent *ret, char *buf, size_t buflen,
-			struct hostent **result, int *h_errnop)
+GETHOSTBYXXXX_R_RETURN_TYPE overwritten_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS_WITH_TYPES )
 {
 	struct polymorphic_addr pa, *new_pa;
 
 	debug_print(1, "in gethostbyaddr_r\n");
+
 	if (type == AF_INET)
 	{
 		copy_ipv4_addr_to_pa((struct in_addr *)addr, &pa);
 		new_pa = return_converted_pa(&pa, from_ipv6_agnostic_to_ipv6_aware);
-		return original_gethostbyaddr_r((const void *)&new_pa->addr, new_pa->addr_len, new_pa->family, 
-					ret, buf, buflen, result, h_errnop);
+		addr = (typeof(addr)) &new_pa->addr;
+		len = new_pa->addr_len;
+		type = new_pa->family;
 	}
-	else
-	{
-		return original_gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop);
-	}
+
+	return original_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS );
 }
 
 /* Some systems return EINVAL instead of ERANGE when the following 
@@ -282,12 +291,12 @@ int overwritten_gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 
 struct hostent *overwritten_gethostbyname(const char *name)
 {
-	static __thread struct hostent result;
+	static __thread struct hostent ret_storage;
 	static __thread int buflen = 0;
 	static __thread char *buf = NULL;
-	int done = 0;
-	struct hostent *function_result;
-	int gethostbyname_r_result;
+	int done = 0, *h_errnop = &h_errno;
+	struct hostent *function_result, *ret = &ret_storage, **result = &function_result;
+	GETHOSTBYXXXX_R_RETURN_TYPE gethostbyname_r_result;
 
 	if (buflen == 0)
 	{
@@ -301,15 +310,15 @@ struct hostent *overwritten_gethostbyname(const char *name)
 		debug_print(1, "buflen = %d\n", buflen);
 		buf = realloc(buf, buflen);
 		// call the modified gethostbyname_r function below
-		gethostbyname_r_result = overwritten_gethostbyname_r(name, &result, buf, buflen, &function_result, &h_errno);
-		debug_print(1, "gethostbyname_r returned: %d, %d, %d\n", gethostbyname_r_result, h_errno, errno);
-		if (gethostbyname_r_result == 0)
+		// GETHOSTBYNAME_R_ARGS = name, ret, buf, buflen, [result,] h_errnop
+		gethostbyname_r_result = overwritten_gethostbyname_r( GETHOSTBYNAME_R_ARGS );
+		if TEST_RETURN_VALUE(gethostbyname_r_result)
 		{
 			done = 1;
 		}
 		else
 		{
-			if (gethostbyname_r_result != ERANGE)
+			if (ERROR_VALUE(gethostbyname_r_result, h_errno) != ERANGE)
 			{
 				function_result = NULL;
 				done = 1;
@@ -317,15 +326,18 @@ struct hostent *overwritten_gethostbyname(const char *name)
 		}
 	}
 
-//	record_hostent(result);
-	return function_result;
+	return RETURN_VALUE(gethostbyname_r_result, function_result);
 }
 
-int overwritten_gethostbyname_r(const char *name,
-		struct hostent *ret, char *buf, size_t buflen,
-		struct hostent **result, int *h_errnop)
+GETHOSTBYXXXX_R_RETURN_TYPE overwritten_gethostbyname_r( GETHOSTBYNAME_R_ARGS_WITH_TYPES )
 {
+#if GETHOSTBYXXXX_HOSTENT_RESULT_IS_RETURNED
+	struct hostent *result_storage;
+	ipv6_capable_gethostbyname_r(name, ret, buf, buflen, &result_storage, h_errnop);
+	return result_storage;
+#else
 	return ipv6_capable_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
+#endif
 }
 
 int overwritten_getnameinfo(const struct sockaddr *sa, socklen_t salen,

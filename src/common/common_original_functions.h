@@ -43,13 +43,9 @@ int original_getaddrinfo(const char *nodename,
 		const struct addrinfo *hints,
 		struct addrinfo **res);
 struct hostent *original_gethostbyaddr(const void *addr, socklen_t len, int type);
-int original_gethostbyaddr_r(	const void *addr, socklen_t len, int type,
-			struct hostent *ret, char *buf, size_t buflen,
-			struct hostent **result, int *h_errnop);
+GETHOSTBYXXXX_R_RETURN_TYPE original_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS_WITH_TYPES );
 struct hostent *original_gethostbyname(const char *name);
-int original_gethostbyname_r(const char *name,
-		struct hostent *ret, char *buf, size_t buflen,
-		struct hostent **result, int *h_errnop);
+GETHOSTBYXXXX_R_RETURN_TYPE original_gethostbyname_r( GETHOSTBYNAME_R_ARGS_WITH_TYPES );
 int original_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		char *node, socklen_t nodelen, char *service,
 		socklen_t servicelen, unsigned int flags);

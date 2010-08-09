@@ -64,21 +64,17 @@ HOOK(	gethostbyaddr,
 	PROTOTYPE(struct hostent *gethostbyaddr(const void *addr, socklen_t len, int type)),
 	PARAMETERS((addr, len, type)))
 
-HOOK(	gethostbyaddr_r,
-	PROTOTYPE(int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
-				struct hostent *ret, char *buf, size_t buflen,
-				struct hostent **result, int *h_errnop)),
-	PARAMETERS((addr, len, type, ret, buf, buflen, result, h_errnop)))
+HOOK(   gethostbyaddr_r,
+	PROTOTYPE(GETHOSTBYXXXX_R_RETURN_TYPE gethostbyaddr_r(  GETHOSTBYADDR_R_ARGS_WITH_TYPES )),
+	PARAMETERS((GETHOSTBYADDR_R_ARGS)))
 
 HOOK(	gethostbyname,
 	PROTOTYPE(struct hostent *gethostbyname(const char *name)),
 	PARAMETERS((name)))
 
-HOOK(	gethostbyname_r,
-	PROTOTYPE(int gethostbyname_r(const char *name,
-			struct hostent *ret, char *buf, size_t buflen,
-			struct hostent **result, int *h_errnop)),
-	PARAMETERS((name, ret, buf, buflen, result, h_errnop)))
+HOOK(   gethostbyname_r,
+	PROTOTYPE(GETHOSTBYXXXX_R_RETURN_TYPE gethostbyname_r(  GETHOSTBYNAME_R_ARGS_WITH_TYPES )),
+	PARAMETERS((GETHOSTBYNAME_R_ARGS)))
 
 HOOK(	getnameinfo,
 	PROTOTYPE(GETNAMEINFO_PROTOTYPE),

@@ -142,15 +142,13 @@ struct hostent *original_gethostbyaddr(const void *addr, socklen_t len, int type
 	return result;
 }
 
-int original_gethostbyaddr_r(	const void *addr, socklen_t len, int type,
-			struct hostent *ret, char *buf, size_t buflen,
-			struct hostent **result, int *h_errnop)
+GETHOSTBYXXXX_R_RETURN_TYPE original_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS_WITH_TYPES )
 {
-	int function_result;
+	GETHOSTBYXXXX_R_RETURN_TYPE function_result;
 
 	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(gethostbyaddr_r),
-					ARGS(addr, len, type, ret, buf, buflen, result, h_errnop),
-					RETURN_VALUE_IF_FAILURE(-1),
+					ARGS( GETHOSTBYADDR_R_ARGS ),
+					RETURN_VALUE_IF_FAILURE( GETHOSTBYXXXX_R_RETURN_VALUE_IF_NOT_FOUND ),
 					RESULT(function_result), 
 					TRY_SYMBOL_VERSIONS("GLIBC_2.1.2"));
 	return function_result;
@@ -167,15 +165,13 @@ struct hostent *original_gethostbyname(const char *name)
 	return result;
 }
 
-int original_gethostbyname_r(const char *name,
-		struct hostent *ret, char *buf, size_t buflen,
-		struct hostent **result, int *h_errnop)
+GETHOSTBYXXXX_R_RETURN_TYPE original_gethostbyname_r( GETHOSTBYNAME_R_ARGS_WITH_TYPES )
 {
-	int function_result;
+	GETHOSTBYXXXX_R_RETURN_TYPE function_result;
 
 	__CALL_ORIGINAL_FUNCTION(	FUNCTION_SYMBOL(gethostbyname_r),
-					ARGS(name, ret, buf, buflen, result, h_errnop),
-					RETURN_VALUE_IF_FAILURE(-1),
+					ARGS( GETHOSTBYNAME_R_ARGS ),
+					RETURN_VALUE_IF_FAILURE( GETHOSTBYXXXX_R_RETURN_VALUE_IF_NOT_FOUND ),
 					RESULT(function_result),
 					TRY_SYMBOL_VERSIONS("GLIBC_2.1.2"));
 	return function_result;

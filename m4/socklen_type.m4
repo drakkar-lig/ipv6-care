@@ -16,6 +16,29 @@
 # See the License for the specific language governing permissions and 
 # limitations under the License.
 
-AM_CFLAGS = $(CFLAG_VISIBILITY) -Werror
-AM_CPPFLAGS = -D_GNU_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=0 $(CPPFLAGS_SOCKLEN_T) -I/usr/local/include -imacros config.h
-AM_LDFLAGS = -avoid-version -shared -module
+# AX_CHECK_SOCKLEN_TYPE()
+# -----------------------------------------------
+# Checks definitions about socklen related types
+AC_DEFUN([AX_CHECK_SOCKLEN_TYPE],
+[
+CPPFLAGS_SOCKLEN_T=
+AC_CACHE_CHECK([whether Psocklen_t is defined correctly or not defined],
+                [ax_cv_PSOCKLEN_T_OK],
+[AC_TRY_COMPILE([ 
+#include <sys/types.h>
+#include <sys/socket.h>
+#ifdef _SOCKLEN_T
+void a(Psocklen_t arg);
+
+void a(socklen_t *arg)
+{
+}
+#endif
+], [ ], [ax_cv_PSOCKLEN_T_OK=yes], [ax_cv_PSOCKLEN_T_OK=no])]
+)
+if test x"$ax_cv_PSOCKLEN_T_OK" != xyes; then
+	CPPFLAGS_SOCKLEN_T="-D_SOCKLEN_T -Dsocklen_t=size_t -DPsocklen_t=\"socklen_t *\""
+	AC_SUBST([CPPFLAGS_SOCKLEN_T])
+fi
+])
+

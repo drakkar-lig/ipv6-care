@@ -29,6 +29,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 
 #include "macros.h"
 #include "common_networking_tools.h"
+#include "common_original_functions.h"
 
 extern __thread fd_set last_read_fds_storage;
 extern __thread fd_set *last_read_fds;

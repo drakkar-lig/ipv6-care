@@ -214,9 +214,7 @@ PUBLIC_FUNCTION struct hostent *gethostbyaddr(const void *addr, socklen_t len, i
 	return original_gethostbyaddr(addr, len, type);
 }
 
-PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
-			struct hostent *ret, char *buf, size_t buflen,
-			struct hostent **result, int *h_errnop)
+PUBLIC_FUNCTION GETHOSTBYXXXX_R_RETURN_TYPE gethostbyaddr_r( GETHOSTBYADDR_R_ARGS_WITH_TYPES )
 {
 	char ip[IP_MAX_SIZE];
 
@@ -229,7 +227,7 @@ PUBLIC_FUNCTION int gethostbyaddr_r(	const void *addr, socklen_t len, int type,
 		__END_FUNCTION_CALL_ANALYSIS
 	}
 	
-	return original_gethostbyaddr_r(addr, len, type, ret, buf, buflen, result, h_errnop);
+	return original_gethostbyaddr_r( GETHOSTBYADDR_R_ARGS );
 }
 
 PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
@@ -244,9 +242,7 @@ PUBLIC_FUNCTION struct hostent *gethostbyname(const char *name)
 	return original_gethostbyname(name);
 }
 
-PUBLIC_FUNCTION int gethostbyname_r(const char *name,
-		struct hostent *ret, char *buf, size_t buflen,
-		struct hostent **result, int *h_errnop)
+PUBLIC_FUNCTION GETHOSTBYXXXX_R_RETURN_TYPE gethostbyname_r( GETHOSTBYNAME_R_ARGS_WITH_TYPES )
 {
 	if (__START_FUNCTION_CALL_ANALYSIS_OK)
 	{
@@ -263,7 +259,7 @@ PUBLIC_FUNCTION int gethostbyname_r(const char *name,
 		__END_FUNCTION_CALL_ANALYSIS
 	}
 	
-	return original_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
+	return original_gethostbyname_r( GETHOSTBYNAME_R_ARGS );
 }
 
 PUBLIC_FUNCTION GETNAMEINFO_PROTOTYPE
