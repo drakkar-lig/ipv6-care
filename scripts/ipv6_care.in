@@ -243,8 +243,9 @@ case "$1" in
 		}
 
 		get_process_list()
-		{
-			ps T -o pid= -o comm=
+		{	# on some systems no "-T" option is available
+			# so we combine the -t option and the tty command for the same effect
+			ps -t "$(expr "$(tty)" : "\/dev\/\(.*\)")" -o pid= -o comm=
 		}
 
 		get_process_list > /tmp/.plist_$$_init
@@ -262,7 +263,7 @@ case "$1" in
 		do
 			get_process_list > /tmp/.plist_$$_end
 
-			subprocesses_list=$(diff /tmp/.plist_$$_init /tmp/.plist_$$_end | grep -vw ps | grep -x ">.*" | 
+			subprocesses_list=$(diff /tmp/.plist_$$_init /tmp/.plist_$$_end | grep -vw ps | grep "^>.*$" | 
 						awk '{ print $2 }')
 			subprocesses_list=$(echo $subprocesses_list) 	# convert linebreaks to spaces
 			if [ "$subprocesses_list" != "" ]

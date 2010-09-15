@@ -144,6 +144,13 @@ void register_info_int(char *name, int value)
 
 void register_info_chars(char *name, char *value)
 {
-	append_to_string(&log_function_line, " %s=%s", name, value);
+	if (value == NULL)
+	{
+		append_to_string(&log_function_line, " %s=(null)", name);
+	}
+	else
+	{
+		append_to_string(&log_function_line, " %s=%s", name, value);
+	}
 }
 

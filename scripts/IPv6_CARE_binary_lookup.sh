@@ -34,10 +34,12 @@ fi
 echo -n "Testing... "
 # freebsd needs ldd option '-a' in order to have the LD_PRELOADed library displayed.
 # linux does not know this option.
-# So we try both and ignore errors.
+# opensolaris' ldd fails when LD_PRELOAD is set, we use LD_PRELOAD_32 instead which works.
+# So we try all these and ignore errors.
 ldd_result=$(
 	LD_PRELOAD=$library_path ldd $file 2>/dev/null
 	LD_PRELOAD=$library_path ldd -a $file 2>/dev/null
+	LD_PRELOAD_32=$library_path ldd $file 2>/dev/null
 )
 echo "done."
 if [ $(echo "$ldd_result" | grep '=>' | wc -l) -eq 0 ]

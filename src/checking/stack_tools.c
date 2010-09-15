@@ -60,9 +60,9 @@ void get_bt_line_info(char *line, char **name_start, char **name_end,
 		*address_end = strchr(line, ' ');
 	}
 	else
-	{ 	// linux
+	{ 	// linux or solaris
 		*name_start = line;
-		*name_end = line + strcspn(line, " (");
+		*name_end = line + strcspn(line, " ('");
 		*address_start = strchr(line, '[') +1;
 		*address_end = strchr(line, ']');
 	}
