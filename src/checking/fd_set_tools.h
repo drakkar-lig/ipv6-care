@@ -26,8 +26,9 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 #define __FD_SET_TOOLS_H__
 #include <sys/types.h>
 
-void register_last_read_fds(fd_set *readfds);
+void register_last_read_fds(fd_set *readfds, nfds_t nfds);
 int test_if_accepting_only_IPv4(int socket);
+int test_if_fd_set_contains_ipv6_sockets(int nfds, fd_set *fds);
 int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 void register_fd_sets_parameters(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds);
 #endif

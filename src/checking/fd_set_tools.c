@@ -33,11 +33,12 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 
 extern __thread fd_set last_read_fds_storage;
 extern __thread fd_set *last_read_fds;
+extern __thread unsigned int last_read_nfds;
 
 // These functions are useful for the management of fd-sets 
 // in 'select' and 'pselect'
 // ----------------------------------------------------------
-void register_last_read_fds(fd_set *readfds)
+void register_last_read_fds(fd_set *readfds, nfds_t nfds)
 {
 	if (last_read_fds == NULL)
 	{
@@ -45,6 +46,7 @@ void register_last_read_fds(fd_set *readfds)
 	}
 	
 	memcpy(last_read_fds, readfds, sizeof(*last_read_fds));
+	last_read_nfds = nfds;
 }
 
 
@@ -56,19 +58,42 @@ int test_if_accepting_only_IPv4(int socket)
 
 	// we will check that we are not accepting only IPv4 clients, i.e.:
 	// 1) the socket is IPv4
-	// 2) no select / poll involving this socket was previously done
+	// 2) no select / poll involving both this socket and at least one IPv6 socket was previously done
 
 	original_getsockname(socket, sa, &size);
 	if (sa->sa_family == AF_INET)
-	{	
+	{	// test if a select / poll was previously done
 		if (last_read_fds == NULL)
 			return 1;
-	
+		// test if this previous select / poll involved this socket
 		if (!FD_ISSET(socket, last_read_fds))
+			return 1;
+		// test if this previous select / poll also involved at least one IPv6 socket
+		if (test_if_fd_set_contains_ipv6_sockets(last_read_nfds, last_read_fds) == 0)
 			return 1;
 	}
 
 	return 0;
+}
+
+int test_if_fd_set_contains_ipv6_sockets(int nfds, fd_set *fds)
+{
+	int n;
+	int result = 0; // false by default
+
+	for (n=0; n<nfds; n++)
+	{
+		if ((fds != 0)&&(FD_ISSET(n, fds) != 0))
+		{
+			if (test_if_fd_is_an_ipv6_socket(n) == 1)
+			{
+				result = 1; // true
+				break;
+			}
+		}
+	}
+
+	return result;
 }
 
 int test_if_fd_sets_contain_network_sockets(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)

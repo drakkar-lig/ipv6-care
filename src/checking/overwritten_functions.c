@@ -431,7 +431,7 @@ PUBLIC_FUNCTION int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set 
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
-		register_last_read_fds(readfds);
+		register_last_read_fds(readfds, nfds);
 
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{
@@ -469,7 +469,7 @@ PUBLIC_FUNCTION int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 {
 	if (test_if_fd_sets_contain_network_sockets(nfds, readfds, writefds, errorfds))
 	{
-		register_last_read_fds(readfds);
+		register_last_read_fds(readfds, nfds);
 
 		if (__START_FUNCTION_CALL_ANALYSIS_OK)
 		{

@@ -41,5 +41,6 @@ __thread int index_last_line = -1;
 __thread int log_file_allocated_size = 0;
 __thread fd_set last_read_fds_storage;
 __thread fd_set *last_read_fds = NULL;
+__thread unsigned int last_read_nfds = 0;
 
 

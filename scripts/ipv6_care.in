@@ -255,7 +255,7 @@ case "$1" in
 
 		# run the test
 		IPV6_VERBOSE_LEVEL=$verbose_level LD_PRELOAD="$checking_library" \
-						eval "$IPV6_CARE_DEBUG_TOOL $program_to_test"
+						eval "IPV6_CARE_TTY=$(tty) $IPV6_CARE_DEBUG_TOOL $program_to_test"
 		# done.
 
 		# check if some subprocesses are still running
@@ -294,7 +294,7 @@ case "$1" in
 				exit
 			fi
 
-			LD_PRELOAD="$patching_library" eval "$IPV6_CARE_DEBUG_TOOL $program_to_patch"
+			LD_PRELOAD="$patching_library" eval "IPV6_CARE_TTY=$(tty) $IPV6_CARE_DEBUG_TOOL $program_to_patch"
 		else
 			print_usage
 			exit

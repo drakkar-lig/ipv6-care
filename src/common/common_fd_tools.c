@@ -27,6 +27,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 extern FILE *tty_fd;
 
@@ -39,19 +40,30 @@ extern FILE *tty_fd;
 
 void save_tty_fd()
 {
-	char tty_name[MAX_TTY_NAME_SIZE];
+	char tty_name_alloc[MAX_TTY_NAME_SIZE];
+	char *tty_name;
 	int done_ok = 0;
 
-	if (isatty(1))
+	tty_name = getenv("IPV6_CARE_TTY");
+	
+	if (tty_name == NULL)
 	{
-		if (ttyname_r(1, tty_name, MAX_TTY_NAME_SIZE) == 0)
+		if (isatty(1))
 		{
-			tty_fd = fopen(tty_name, "w+");
-			if (tty_fd != NULL)
+			if (ttyname_r(1, tty_name_alloc, MAX_TTY_NAME_SIZE) == 0)
 			{
-				done_ok = 1;
+				tty_name = tty_name_alloc;
 			}
-		} 
+		}
+	}
+
+	if (tty_name != NULL)
+	{
+		tty_fd = fopen(tty_name, "w+");
+		if (tty_fd != NULL)
+		{
+			done_ok = 1;
+		}
 	}
 
 	if (done_ok == 0)

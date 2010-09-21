@@ -30,13 +30,9 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 // These functions are useful for networking operations
 // ----------------------------------------------------
 
-// this function returns 1 if the family of the socket is AF_INET or AF_INET6, 
-// 0 otherwise, and -1 if an error occurs (fd is not a socket, etc.)
-int test_if_fd_is_a_network_socket(int fd)
+// this function returns 0 if fd is a socket, -1 otherwise
+int test_if_fd_is_a_socket(int fd, struct sockaddr *sa, unsigned int *size)
 {
-	struct sockaddr_storage sas;
-	unsigned int size = sizeof(sas);
-	struct sockaddr *sa = (struct sockaddr *)&sas;
 	int optval;
 	unsigned int opt_size;
 
@@ -51,9 +47,54 @@ int test_if_fd_is_a_network_socket(int fd)
 		return -1;
 	}
 
-	if(original_getsockname(fd, sa, &size) == -1)
+	if(original_getsockname(fd, sa, size) == -1)
 	{
 		return -1;
+	}
+
+	return 0;
+}
+
+// this function returns 1 if the family of the socket is AF_INET6, 
+// 0 otherwise, and -1 if an error occurs (fd is not a socket, etc.)
+int test_if_fd_is_an_ipv6_socket(int fd)
+{
+	struct sockaddr_storage sas;
+	unsigned int size = sizeof(sas);
+	struct sockaddr *sa = (struct sockaddr *)&sas;
+	int result;
+	
+	result = test_if_fd_is_a_socket(fd, sa, &size);
+	
+	if (result != 0)
+	{
+		return result;
+	}
+
+	if (sa->sa_family == AF_INET6)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+// this function returns 1 if the family of the socket is AF_INET or AF_INET6, 
+// 0 otherwise, and -1 if an error occurs (fd is not a socket, etc.)
+int test_if_fd_is_a_network_socket(int fd)
+{
+	struct sockaddr_storage sas;
+	unsigned int size = sizeof(sas);
+	struct sockaddr *sa = (struct sockaddr *)&sas;
+	int result;
+	
+	result = test_if_fd_is_a_socket(fd, sa, &size);
+	
+	if (result != 0)
+	{
+		return result;
 	}
 
 	if ((sa->sa_family == AF_INET)||(sa->sa_family == AF_INET6))

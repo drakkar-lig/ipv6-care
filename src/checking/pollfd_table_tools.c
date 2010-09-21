@@ -33,6 +33,7 @@ etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
 
 extern __thread fd_set last_read_fds_storage;
 extern __thread fd_set *last_read_fds;
+extern __thread unsigned int last_read_nfds;
 
 // These functions are useful for the management of [p]poll() arguments
 // ----------------------------------------------------------
@@ -54,6 +55,8 @@ void register_last_read_pollfd_table(struct pollfd *fds, nfds_t nfds)
 			FD_SET(fds[n].fd, last_read_fds);
 		}
 	}
+
+	last_read_nfds = nfds;
 }
 
 int test_if_pollfd_table_contain_network_sockets(struct pollfd *fds, nfds_t nfds)
