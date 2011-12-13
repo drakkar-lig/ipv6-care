@@ -19,8 +19,8 @@
 # limitations under the License.
 # 
 # ---------------------------------------------------------------------
-# Developed by Etienne DUBLE - CNRS UREC (http://www.urec.fr)
-# etienne __dot__ duble __at__ urec __dot__ cnrs __dot__ fr
+# Developed by Etienne DUBLE - CNRS LIG (http://www.liglab.fr)
+# etienne __dot__ duble __at__ imag __dot__ fr
 # ---------------------------------------------------------------------
 
 # ---------------------------------------------------------------------
