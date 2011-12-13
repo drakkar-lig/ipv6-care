@@ -17,5 +17,5 @@
 # limitations under the License.
 
 AM_CFLAGS = $(CFLAG_VISIBILITY) -Werror
-AM_CPPFLAGS = -D_GNU_SOURCE -D_BSD_SOURCE -D_FORTIFY_SOURCE=0 $(CPPFLAGS_SOCKLEN_T) -I/usr/local/include -imacros config.h
+AM_CPPFLAGS = -D_GNU_SOURCE -D_BSD_SOURCE -U_FORTIFY_SOURCE $(CPPFLAGS_SOCKLEN_T) -I/usr/local/include -imacros config.h
 AM_LDFLAGS = -avoid-version -shared -module
