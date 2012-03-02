@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and 
 # limitations under the License.
 
-AC_INIT([ipv6_care],[3.2b],[etienne.duble@imag.fr])
+AC_INIT([ipv6_care],[3.2c],[etienne.duble@imag.fr])
 AC_CONFIG_SRCDIR([src/checking/log.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
