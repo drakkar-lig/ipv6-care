@@ -9,8 +9,8 @@ etienne.duble _AT_ imag.fr
 This is just a very basic quick start.
 
 
-Installation steps:
--------------------
+Installation steps from archive:
+--------------------------------
 * Download
 * tar xfz ipv6_care-*.tar.gz
 * cd ipv6_care-*
@@ -18,6 +18,15 @@ Installation steps:
 * make
 * sudo make install
 
+Installation steps from git (developer):
+----------------------------------------
+* git clone <repo>
+* cd ipv6-care
+* scripts/getsourceinfo.sh
+* autoreconf -i 
+* ./configure
+* make
+* sudo make install
 
 Main usages:
 ------------
