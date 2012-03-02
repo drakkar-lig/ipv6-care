@@ -44,6 +44,7 @@ extern char *program_basename;
 extern char *interpreter_name; 
 
 #define INTERPRETER_MAX_SIZE    32
+#define UNKNOWN_PROGRAM    	"unknown_program"
 
 enum init_lib_state
 {
@@ -57,7 +58,7 @@ void init_lib()
 	FILE *fp;
 	char c[2];
 	char *path_of_program_alloc = NULL;
-	char *substring, *char_pointer;
+	char *substring, *char_pointer, *underscore_var;
 
 	save_tty_fd();
 
@@ -91,6 +92,7 @@ void init_lib()
 		}
 	}
 
+	underscore_var = getenv("_");
 	if (program_command_line != NULL)
 	{
 		// and the program basename
@@ -99,7 +101,11 @@ void init_lib()
 		// /usr/bin/python my_script.py
 		// so in this case we try to get 'my_script.py' instead of 'python' in order to be more
 		// explicit about the program being run.
-		substring = strstr(program_command_line, getenv("_"));
+		substring = NULL;
+		if (underscore_var != NULL)
+		{
+			substring = strstr(program_command_line, underscore_var);
+		}
 		if (substring == NULL)
 		{	// we point to the first word
 			asprintf(&path_of_program_alloc, "%s", program_command_line);
@@ -118,7 +124,7 @@ void init_lib()
 		}
 		else
 		{
-			asprintf(&path_of_program_alloc, "%s", getenv("_"));
+			asprintf(&path_of_program_alloc, "%s", underscore_var);
 		}
 
 		asprintf(&program_basename, "%s", basename(path_of_program_alloc));
@@ -128,7 +134,14 @@ void init_lib()
 	{	// we could not get the full command line
 		// we will just retrieve the name of the program
 		// and also copy it as the full command line  
-		asprintf(&path_of_program_alloc, "%s", getenv("_"));
+		if (underscore_var != NULL)
+		{
+			asprintf(&path_of_program_alloc, "%s", underscore_var);
+		}
+		else
+		{
+			asprintf(&path_of_program_alloc, "%s", UNKNOWN_PROGRAM);
+		}
 		asprintf(&program_basename, "%s", basename(path_of_program_alloc));
 		free(path_of_program_alloc);
 		asprintf(&program_command_line, "%s", program_basename);
