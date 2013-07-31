@@ -1,5 +1,5 @@
 .\" Copyright (c) Centre National de la Recherche Scientifique (CNRS,
-.\" France). 2010. 
+.\" France). 2010-2013. 
 .\" Copyright (c) Members of the EGEE Collaboration. 2008-2010. See 
 .\" http://www.eu-egee.org/partners/ for details on the copyright
 .\" holders.  
@@ -16,7 +16,7 @@
 .\" See the License for the specific language governing permissions and 
 .\" limitations under the License.
 
-.TH ipv6_care 8 "December 13, 2011" "GNU/Linux"
+.TH ipv6_care 8 "July 31, 2013" "GNU/Linux"
 
 .\" disable hyphenation
 .ad l
@@ -24,20 +24,16 @@
 .SH NAME
 ipv6_care \- IPv6 compliance toolbox
 .SH SYNOPSIS
-.B ipv6_care
-check [-v] <program_command_line>		# -> check mode
-.br
-.B ipv6_care
-sh[ell] [-v]						# -> shell
-.br
-.B ipv6_care
-patch <program_command_line>			# -> patch mode
-.br
-.B ipv6_care
-system patch						# -> toggle patch mode for all next programs started (DANGEROUS if you restart the operating system!)
-.br
-.B ipv6_care
-binary lookup <path_to_binary>		# -> self-diagnosis
+.TS
+l l.
+\fBipv6_care\fP check [-v] <program_command_line>	# -> check mode
+\fBipv6_care\fP sh[ell] [-v]	# -> shell
+\fBipv6_care\fP patch <program_command_line>	# -> patch mode
+\fBipv6_care\fP system patch	# -> toggle patch mode for all next programs started (*)
+\fBipv6_care\fP binary lookup <path_to_binary>	# -> binary diagnosis
+.TE
+
+(*) The 'system patch' setting is persistent across system restarts. This means that, at next restart, the patch mode will be applied to ALL programs launched at start up. Use with caution!
 
 .SH DESCRIPTION
 .B IPv6 CARE 
@@ -68,8 +64,7 @@ Check if the tool will work with the specified binary, and, if not, describe why
 
 
 .SH OPTIONS
-.B
-.IP -v 
+.IP \fB-v\fR 
 (in check mode)
 This option will cause
 .B IPv6 CARE
@@ -77,9 +72,9 @@ to display the function calls detected on standard output.
 
 .SH EXAMPLES
 .B ipv6_care check -v 
-telnet www.google.fr 80
+telnet my.webserver.org 80
 .br
-This will start the specified command '\fBtelnet www.google.fr 80\fR', report the detected function calls, and generate a diagnosis in a subdirectory of /tmp/ipv6_diagnosis, as specified at the end of the tool's output.
+This will start the specified command '\fBtelnet my.webserver.org 80\fR', report the detected function calls, and generate a diagnosis in a subdirectory of /tmp/ipv6_diagnosis, as specified at the end of the tool's output.
 
 .PP
 .B ipv6_care shell
@@ -97,7 +92,7 @@ service mysql start
 .B ipv6_care patch
 mysql -h my_v6only_mysql_server -p
 .br
-This will start the mysql service and client and patch them in order to make them IPv6 compliant.
+This will start the mysql service and client and patch them in order to make them IPv6 compliant. (Note: recent versions of mysql are now IPv6-compliant.)
 
 .PP
 (as root)
@@ -105,7 +100,7 @@ This will start the mysql service and client and patch them in order to make the
 .B ipv6_care system patch
 ; init 6
 .br
-This applies the patch mode and restarts the machine, which means that the patch mode will be applied to ALL programs launched at start up. This is DANGEROUS!
+This applies the patch mode and restarts the machine, which means that the patch mode will be applied to ALL programs launched at start up. Use with caution, and do not try this on your production server!
 
 .PP
 .B ipv6_care binary lookup 
@@ -115,12 +110,11 @@ This will tell you if the \fBLD_PRELOAD\fR-based mechanism which
 .B IPv6 CARE
 uses is expected to work with the binary '\fB/usr/bin/telnet\fR'.
 
-
 .SH NOTES
-For more information please consult http://sourceforge.net/projects/ipv6-care or email to etienne.duble _at_ imag.fr.
+For more information please checkout http://sourceforge.net/projects/ipv6-care or subscribe to the following mailing list: https://lists.sourceforge.net/lists/listinfo/ipv6-care-support.
 
 .SH BUGS
-Please report bugs to etienne.duble _at_ imag.fr.
+Please subscribe to the following mailing list: https://lists.sourceforge.net/lists/listinfo/ipv6-care-support.
 
 .SH "SEE ALSO"
 \fBipv6\fR(7), \fBld.so\fR(8)
