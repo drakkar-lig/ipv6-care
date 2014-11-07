@@ -16,8 +16,8 @@ Once installed you can also check the man page:
 man ipv6_care
 ```
 
-Installation steps from pre-built-archive:
-==========================================
+Installation steps from archive:
+================================
 Download the archive from [here](https://sourceforge.net/projects/ipv6-care/files/latest/download?source=files).
 
 Then:
