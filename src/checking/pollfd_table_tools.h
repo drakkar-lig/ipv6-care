@@ -26,4 +26,5 @@ etienne __dot__ duble __at__ imag __dot__ fr
 #define __POLLFD_TABLE_TOOLS_H__
 int test_if_pollfd_table_contain_network_sockets(struct pollfd *fds, nfds_t nfds);
 void register_pollfd_table_parameters(struct pollfd *fds, nfds_t nfds);
+void register_last_read_pollfd_table(struct pollfd *fds, nfds_t nfds);
 #endif

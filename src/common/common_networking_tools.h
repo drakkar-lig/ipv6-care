@@ -25,4 +25,5 @@ etienne __dot__ duble __at__ imag __dot__ fr
 #ifndef __COMMON_NETWORKING_TOOLS_H__
 #define __COMMON_NETWORKING_TOOLS_H__
 int test_if_fd_is_a_network_socket(int fd);
+int test_if_fd_is_an_ipv6_socket(int fd);
 #endif
