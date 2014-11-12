@@ -26,6 +26,7 @@ tar xfz ipv6_care-*.tar.gz
 cd ipv6_care-*
 ./configure
 make
+make check # optionally
 sudo make install
 ```
 
@@ -41,6 +42,7 @@ scripts/getsourceinfo.sh
 autoreconf -i
 ./configure
 make
+make check # optionally
 sudo make install
 ```
 
