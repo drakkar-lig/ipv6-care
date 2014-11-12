@@ -46,5 +46,5 @@ all-local: all-subdirs
 clean-local: clean-subdirs
 
 ld_preload_error:
-	$(error "FAILED: OS seems not to implement the LD_PRELOAD mechanism!!")
+	@echo "FAILED: OS seems not to implement the LD_PRELOAD mechanism!!" >&2 && exit 1
 

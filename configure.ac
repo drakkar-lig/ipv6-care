@@ -21,6 +21,7 @@ AC_CONFIG_SRCDIR([src/checking/log.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_SILENT_RULES([yes])
+AM_PROG_AR()
 
 # Checks for programs.
 AC_PROG_CC
