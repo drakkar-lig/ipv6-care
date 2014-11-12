@@ -50,7 +50,7 @@ void register_last_read_pollfd_table(struct pollfd *fds, nfds_t nfds)
 
 	for (n=0; n<nfds; n++)
 	{
-		if (fds[n].events & POLLIN > 0)
+		if ((fds[n].events & POLLIN) > 0)
 		{
 			FD_SET(fds[n].fd, last_read_fds);
 		}

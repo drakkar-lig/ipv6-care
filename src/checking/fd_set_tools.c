@@ -30,6 +30,7 @@ etienne __dot__ duble __at__ imag __dot__ fr
 #include "macros.h"
 #include "common_networking_tools.h"
 #include "common_original_functions.h"
+#include "fd_set_tools.h"
 
 extern __thread fd_set last_read_fds_storage;
 extern __thread fd_set *last_read_fds;
