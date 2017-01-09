@@ -1,0 +1,17 @@
+Makefile
+Makefile.in
+Makefile.src_info
+*.lo
+*.la
+.deps
+.libs
+*.m4
+*.cache
+build-aux
+config.*
+configure
+*.tar.gz
+libtool
+scripts/ipv6_care
+self_test/src/binaries/main.o
+self_test/src/binaries/test_preload
