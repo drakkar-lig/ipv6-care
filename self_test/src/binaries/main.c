@@ -23,6 +23,8 @@ etienne __dot__ duble __at__ imag __dot__ fr
 ---------------------------------------------------------------------
 */
 #include <stdio.h>
+int preload_test();
+
 int main()
 {
 	return(preload_test());
